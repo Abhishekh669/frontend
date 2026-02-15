@@ -9,7 +9,12 @@ import { ArrowRight, Utensils, Plus, ChefHat, Sparkles, Search, ArrowUpDown } fr
 import { User } from "@/utils/types/user.types"
 import { Category } from "@/utils/types/food-category.types"
 import { useGetFoodCategories } from "@/utils/hooks/tanstack-query/query-hook/food-category/use-get-all-food-category"
-import { createFoodCategory } from "@/utils/actions/food-category/food-category.post"
+import { createFoodCategory, NewCatType } from "@/utils/actions/food-category/food-category.post"
+import { useCreateFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-create-food-category"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { error } from "console"
+import { getErrorMessage } from "@/utils/helper/get-error-message"
 
 type SortType = "name-asc" | "name-desc" | "date-newest" | "date-oldest" | "active"
 
@@ -19,7 +24,10 @@ function FoodManagementPage({ user }: { user: User }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<SortType>("date-newest")
   const { data, isLoading, isError } = useGetFoodCategories()
-  
+  const { mutate: create_food_category, isPending } = useCreateFoodCategory();
+  const queryClient = useQueryClient();
+
+
   const categories: Category[] = useMemo(() => {
     if (isLoading) return []
     if (data?.categories) {
@@ -29,10 +37,27 @@ function FoodManagementPage({ user }: { user: User }) {
   }, [data, isLoading])
 
   const createCategory = async () => {
-    if (!catName.trim()) return
-    const res = await createFoodCategory(catName)
-    // Optionally clear the input or refresh data
-    setCatName("")
+    if (isPending) return;
+    try {
+      const data: NewCatType = {
+        category_name: catName,
+        slug_path: [],
+      }
+      create_food_category(data, {
+        onSuccess: (res) => {
+          if (res.message && res.success) {
+            queryClient.invalidateQueries({ queryKey: ["get-all-categories"] });
+            toast.success(res.message)
+            setCatName("")
+          }
+        },
+        onError : (err) =>{
+          toast.success(err.message   || "failed to create category")
+        }
+      })
+    } catch (error) {
+      toast.error(getErrorMessage(error as string || "failed to create user"))
+    }
   }
 
   const handleVisit = (slug: string) => {
@@ -119,11 +144,22 @@ function FoodManagementPage({ user }: { user: User }) {
               />
               <Button
                 onClick={createCategory}
-                disabled={catName.trim().length <= 2}
+                disabled={catName.trim().length <= 2 || isPending}
                 className="sm:w-40 h-11 gap-2 font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                <Plus className="w-4 h-4" strokeWidth={2} />
-                Add Category
+                {
+                  isPending ? (
+                    <>
+                      Adding Category...
+                    </>
+                  ) :
+                    (
+                      <>
+                        <Plus className="w-4 h-4" strokeWidth={2} />
+                        Add Category
+                      </>
+                    )
+                }
               </Button>
             </div>
           </div>
@@ -133,7 +169,7 @@ function FoodManagementPage({ user }: { user: User }) {
       {/* Categories Section */}
       <section className="max-w-7xl mx-auto px-6 pb-10">
         <div className="space-y-6">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -152,7 +188,7 @@ function FoodManagementPage({ user }: { user: User }) {
           {/* Toolbar (Sticky) */}
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl p-4">
             <div className="flex flex-col sm:flex-row gap-3">
-              
+
               {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -205,11 +241,10 @@ function FoodManagementPage({ user }: { user: User }) {
                             {cat.name}
                           </h3>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              cat.is_active
-                                ? "bg-primary/15 text-primary"
-                                : "bg-muted text-muted-foreground"
-                            }`}
+                            className={`text-xs px-2 py-1 rounded-full ${cat.is_active
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground"
+                              }`}
                           >
                             {cat.is_active ? "Active" : "Inactive"}
                           </span>

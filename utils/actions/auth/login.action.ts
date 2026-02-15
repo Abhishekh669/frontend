@@ -39,10 +39,6 @@ export const loginAction = async (email: string, password: string): Promise<Acti
 
     } catch (error) {
         error = getErrorMessage(error);
-        return {
-            success: false,
-            error: error as string
-        }
-
+        throw new Error(error as string)
     }
 }

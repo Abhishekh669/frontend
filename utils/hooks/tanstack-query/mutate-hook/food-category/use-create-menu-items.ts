@@ -1,8 +1,8 @@
-import { createFoodCategory } from "@/utils/actions/food-category/food-category.post";
+import { createMenuItems } from "@/utils/actions/food-category/food-category.post";
 import { useMutation } from "@tanstack/react-query";
-export const useCreateFoodCategory = () => {
+export const useCreateMenuItems = () => {
   return useMutation({
-    mutationFn: createFoodCategory,
+    mutationFn: createMenuItems,
     onSuccess: ()=>{},
     onError: () => { },
     onSettled: () => { },

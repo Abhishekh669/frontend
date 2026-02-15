@@ -22,3 +22,20 @@ export interface MenuItem {
   created_at: Date;
   updated_at: Date;
 }
+
+
+export interface CreateMenuItemType {
+  name : string;
+  description  : string ;
+  price : number;
+  is_available : boolean;
+  image_url  : string | null;
+  display_order : number;
+} 
+
+
+export interface CreateMenuItems {
+  category_id : string;
+  menu_items : CreateMenuItemType[];
+}
+
