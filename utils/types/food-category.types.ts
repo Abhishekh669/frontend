@@ -39,3 +39,42 @@ export interface CreateMenuItems {
   menu_items : CreateMenuItemType[];
 }
 
+
+
+export interface CategoryData {
+  success: boolean;
+  breadcrumb: Category[];
+  children: Category[];
+  menu_items: MenuItem[];
+}
+
+export interface UpdateCategoryType {
+  id: string;
+  name: string;
+  is_active: boolean;
+  display_order: number;
+}
+
+
+export interface UpdateMenuItemType {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  is_available: boolean;
+  image_url?: string | null;
+  display_order: number;
+}
+
+
+
+export interface CategoryApi {
+  updateCategory: (data: UpdateCategoryType) => Promise<void>;
+  deleteCategories: (ids: string[]) => Promise<void>;
+}
+
+export interface MenuItemApi {
+  updateMenuItem: (data: UpdateMenuItemType, imageFile?: File) => Promise<void>;
+  deleteMenuItems: (ids: string[]) => Promise<void>;
+  toggleAvailability: (id: string, isAvailable: boolean) => Promise<void>;
+}
