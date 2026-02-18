@@ -20,16 +20,17 @@ export interface RouteItem {
 }
 
 export const sidebarRoutes: RouteItem[] = [
-  { title: "Dashboard", path: AvailableRoutes.DASHBOARD, icon: LayoutDashboard },
-  { title: "Reports & Analysis", path: AvailableRoutes.REPORTS, icon: FileBarChart },
-  { title: "Client Management", path: AvailableRoutes.CLIENT_MANAGEMENT, icon: Users },
-  { title: "Order Management", path: AvailableRoutes.ORDER_MANAGEMENT, icon: ClipboardList },
-  { title: "Table Management", path: AvailableRoutes.TABLE_MANAGEMENT, icon: Grid3X3 },
-  { title: "Food Category", path: AvailableRoutes.FOOD_CATEGORY, icon: UtensilsCrossed },
-  { title: "Raw Materials", path: AvailableRoutes.RAW_MATERIALS, icon: Package },
+  { title: "Attendance", path: AvailableRoutes.ATTENDANCE, icon: Users },
   { title: "Cashier", path: AvailableRoutes.CASHIER_ROUTE, icon: Calculator },
   { title: "Chef", path: AvailableRoutes.CHEF_ROUTE, icon: ChefHat },
+  { title: "Client Management", path: AvailableRoutes.CLIENT_MANAGEMENT, icon: Users },
+  { title: "Dashboard", path: AvailableRoutes.DASHBOARD, icon: LayoutDashboard },
+  { title: "Food Category", path: AvailableRoutes.FOOD_CATEGORY, icon: UtensilsCrossed },
+  { title: "Order Management", path: AvailableRoutes.ORDER_MANAGEMENT, icon: ClipboardList },
+  { title: "Raw Materials", path: AvailableRoutes.RAW_MATERIALS, icon: Package },
+  { title: "Reports & Analysis", path: AvailableRoutes.REPORTS, icon: FileBarChart },
   { title: "Settings", path: AvailableRoutes.SETTINGS, icon: Settings },
+  { title: "Table Management", path: AvailableRoutes.TABLE_MANAGEMENT, icon: Grid3X3 },
 ];
 
 interface AppSidebarProps {

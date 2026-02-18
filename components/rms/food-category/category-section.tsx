@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { FolderOpen, Coffee, Key } from 'lucide-react'
 import { Category, CategoryData, MenuItem, UpdateCategoryType, UpdateMenuItemType } from '@/utils/types/food-category.types'
-import { BreadcrumbNavigation } from './breadcrumb-navigation'
 import { SearchFilter } from './search-filter'
 import { CategorySelectionHeader, MenuItemSelectionHeader } from './selection-headers'
 import { ScrollableSection } from './scrollable-section'
@@ -22,7 +21,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { removeMultipleImages } from '@/utils/actions/uploadthing/delete-images'
 import { useUploadThing } from '@/utils/uploadthing/uploadthing-client'
 import { toast } from 'sonner'
-import { convertSegmentPathToStaticExportFilename } from 'next/dist/shared/lib/segment-cache/segment-value-encoding'
+
 
 interface CategoryDisplayProps {
   category: CategoryData

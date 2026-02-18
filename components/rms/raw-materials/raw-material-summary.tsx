@@ -1,10 +1,13 @@
+"use client";
+
 import React from "react";
+import CountUp from "react-countup";
 
 interface RawMaterialSummaryProps {
-  total_materials ?: number;
-  total_quantity ?: number;
-  total_price ?: number;
-  recent_price ?: number;
+  total_materials?: number;
+  total_quantity?: number;
+  total_price?: number;
+  recent_price?: number;
 }
 
 const RawMaterialSummary: React.FC<RawMaterialSummaryProps> = ({
@@ -17,7 +20,7 @@ const RawMaterialSummary: React.FC<RawMaterialSummaryProps> = ({
     { title: "Total Materials", value: total_materials },
     { title: "Total Quantity", value: total_quantity },
     { title: "Total Price (Rs)", value: total_price },
-    {title : "Recent Price (Rs)", value : recent_price}
+    { title: "Recent Price (Rs)", value: recent_price },
   ];
 
   return (
@@ -27,13 +30,23 @@ const RawMaterialSummary: React.FC<RawMaterialSummaryProps> = ({
           key={idx}
           className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-md p-5 flex flex-col items-center justify-center hover:shadow-md transition-shadow duration-300"
         >
-          <p className="text-sm text-gray-500 dark:text-gray-400">{stat.title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.value.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {stat.title}
+          </p>
+
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <CountUp
+              end={stat.value}
+              duration={1.5}
+              separator=","
+              enableScrollSpy
+              scrollSpyOnce
+            />
+          </p>
         </div>
       ))}
     </div>
   );
 };
-
 
 export default RawMaterialSummary;

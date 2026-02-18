@@ -1,5 +1,6 @@
+"use client"
 import React from "react";
-
+import CountUp from "react-countup";
 export interface DashboardCounts {
   total_users: number;
   active_users: number;
@@ -92,11 +93,24 @@ interface StatCardProps {
   value: number;
 }
 
+
 const StatCard: React.FC<StatCardProps> = ({ title, value }) => (
   <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-md p-5 flex flex-col items-center justify-center hover:shadow-md transition-shadow duration-300">
-    <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value.toLocaleString()}</p>
+    
+    <p className="text-sm text-gray-500 dark:text-gray-400">
+      {title}
+    </p>
+
+    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <CountUp
+        end={value}
+        duration={1.5}
+        separator=","
+      />
+    </p>
+
   </div>
 );
+
 
 export default DashboardSummary;

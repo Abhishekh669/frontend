@@ -84,6 +84,13 @@ export type Permission =
   // Dashboard
   | "view:dashboard"
 
+  //attendance 
+  | "view:attendance"
+  | "check-in:attendance"
+  | "check-out:attendance"
+  | "delete:attendance"
+  | "update:attendance"
+
   // Reports
   | "view:reports"
   | "export:reports"

@@ -75,6 +75,7 @@ export const AvailableRoutes = {
   CASHIER_ROUTE: "/cashier",
   CHEF_ROUTE: "/chef",
   SETTINGS: "/settings",
+  ATTENDANCE: "/attendance",
 }
 
 export type Route = typeof AvailableRoutes[keyof typeof AvailableRoutes];
