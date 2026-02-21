@@ -1,10 +1,8 @@
-import React from 'react'
+import HistoryPage from '@/components/rms/attendance/history/history-page'
 
 function page() {
   return (
-    <div>
-      
-    </div>
+   <HistoryPage />
   )
 }
 

@@ -1,4 +1,5 @@
-import { EditDialogBoxAction } from "../rbac/role-n-permissiona";
+import AttendanceCard from "@/components/rms/attendance/attendance-card";
+import { AttendanceManagementAction, EditDialogBoxAction } from "../rbac/role-n-permissiona";
 
 export type Role = "admin" | "manager" | "cashier" | "chef" | "waiter" | "delivery_staff" | "customer";
 export type Gender = "male" | "other" | "female"
@@ -67,6 +68,15 @@ export interface DashboardCounts {
 }
 
 
+export interface UsersForAttendance {
+  id : string
+  name : string;
+  email : string;
+  phone : string;
+  is_active : boolean;
+  image ?: string;
+}
+
 
 
 
@@ -74,12 +84,19 @@ export interface DashboardCounts {
 
 export type Permission =
 
-   typeof EditDialogBoxAction.EDIT_PHONE
-   |  typeof EditDialogBoxAction.EDIT_ROLE_DELIVERY_STAFF
-   |  typeof EditDialogBoxAction.EDIT_ROLE_CASHIER
-   |  typeof EditDialogBoxAction.EDIT_ROLE_CHEF
-   |  typeof EditDialogBoxAction.EDIT_ROLE_WAITER
-   |  typeof EditDialogBoxAction.EDIT_ROLE_CUSTOMER
+  typeof EditDialogBoxAction.EDIT_PHONE
+  | typeof EditDialogBoxAction.EDIT_ROLE_DELIVERY_STAFF
+  | typeof EditDialogBoxAction.EDIT_ROLE_CASHIER
+  | typeof EditDialogBoxAction.EDIT_ROLE_CHEF
+  | typeof EditDialogBoxAction.EDIT_ROLE_WAITER
+  | typeof EditDialogBoxAction.EDIT_ROLE_CUSTOMER
+
+
+  | typeof AttendanceManagementAction.VIEW_ATTENDANCE
+  | typeof AttendanceManagementAction.CHECKIN_ATTENDANCE
+  | typeof AttendanceManagementAction.CHECKOUT_ATTENDANCE
+  | typeof AttendanceManagementAction.DELETE_ATTENDANCE
+  | typeof AttendanceManagementAction.UPDATE_ATTENDANCE
 
   // Dashboard
   | "view:dashboard"

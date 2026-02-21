@@ -25,6 +25,21 @@ export const ClientManagementAction = {
   DELETE_CLIENTS: "delete:clients" as const,
 }
 
+
+
+export const AttendanceManagementAction = {
+  VIEW_ATTENDANCE: "view:attendance" as const,
+  CREATE_ATTENDANCE: "create:attendance" as const,
+  UPDATE_ATTENDANCE: "update:attendance" as const,
+  DELETE_ATTENDANCE: "delete:attendance" as const,
+
+  CHECKIN_ATTENDANCE: "checkin:attendance" as const,
+  CHECKOUT_ATTENDANCE: "checkout:attendance" as const,
+
+} as const
+
+
+
 export const OrderManagementAction = {
   VIEW_ORDERS: "view:orders" as const,
   CREATE_ORDERS: "create:orders" as const,
@@ -91,8 +106,10 @@ export const routePermissions: Record<Role, Route[]> = {
     AvailableRoutes.ORDER_MANAGEMENT,
     AvailableRoutes.TABLE_MANAGEMENT,
     AvailableRoutes.FOOD_CATEGORY,
+    AvailableRoutes.ATTENDANCE,
     AvailableRoutes.RAW_MATERIALS,
     AvailableRoutes.SETTINGS,
+
 
   ],
   cashier: [
@@ -129,6 +146,13 @@ export const rolePermissions: Record<Role, string[]> = {
     EditDialogBoxAction.EDIT_ROLE_CHEF,
     EditDialogBoxAction.EDIT_ROLE_WAITER,
     EditDialogBoxAction.EDIT_ROLE_CUSTOMER,
+
+    //attendance 
+    AttendanceManagementAction.VIEW_ATTENDANCE,
+    AttendanceManagementAction.CHECKIN_ATTENDANCE,
+    AttendanceManagementAction.CHECKOUT_ATTENDANCE,
+    AttendanceManagementAction.DELETE_ATTENDANCE,
+    AttendanceManagementAction.UPDATE_ATTENDANCE,
 
     // Dashboard
     DashboardAction.VIEW_DASHBOARD,
@@ -180,6 +204,8 @@ export const rolePermissions: Record<Role, string[]> = {
     OrderManagementAction.DELETE_ORDERS,
     TableManagementAction.VIEW_TABLES,
     FoodCategoryManagementAction.VIEW_MENU,
+
+    AttendanceManagementAction.VIEW_ATTENDANCE,
   ],
 
   waiter: [
@@ -191,17 +217,25 @@ export const rolePermissions: Record<Role, string[]> = {
     TableManagementAction.VIEW_TABLES,
     TableManagementAction.UPDATE_TABLES,
     FoodCategoryManagementAction.VIEW_MENU,
+    AttendanceManagementAction.VIEW_ATTENDANCE,
+
   ],
 
   chef: [
     OrderManagementAction.VIEW_ORDERS,
     OrderManagementAction.UPDATE_ORDERS,
     RawMaterialManagementAction.VIEW_RAW_MATERIALS,
+
+    AttendanceManagementAction.VIEW_ATTENDANCE,
+
   ],
 
   delivery_staff: [
     OrderManagementAction.VIEW_ORDERS,
     OrderManagementAction.UPDATE_ORDERS,
+
+
+    AttendanceManagementAction.VIEW_ATTENDANCE,
   ],
 
   customer: [

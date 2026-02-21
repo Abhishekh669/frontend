@@ -71,7 +71,7 @@ export default function ClientsManagement({ user }: { user: User }) {
     oldestFirst: false,
   });
 
-  const { data, isLoading, isError } = useGetAllUsers(query);
+  const { data, isLoading, isError, refetch, isRefetching } = useGetAllUsers(query);
   const { mutate: delete_users, isPending } = useDeleteUsers();
   const isDisabled = isLoading || isError || isPending;
 
@@ -101,7 +101,7 @@ export default function ClientsManagement({ user }: { user: User }) {
       setUsers(data.users);
     }
   }, [isLoading, data?.users]);
-  console.log("this is users : ",data)
+  console.log("this is users : ", data)
 
   // 🧠 Client-side filter + sort (except created_at)
   const filteredAndSortedUsers = useMemo(() => {
@@ -114,7 +114,7 @@ export default function ClientsManagement({ user }: { user: User }) {
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
 
       const matchesStatus =
-        (userStatus === "all") || 
+        (userStatus === "all") ||
         (userStatus === "is_active" && user.is_active) ||
         (userStatus === "is_inactive" && !user.is_active);
 
@@ -213,10 +213,7 @@ export default function ClientsManagement({ user }: { user: User }) {
     return visiblePages;
   };
 
-  const handleUpdateUser = (updatedUser: User) => {
-    console.log("updated user : ", updatedUser)
 
-  };
   const handleDeleteUser = (userIds: string[]) => {
 
 
@@ -426,16 +423,18 @@ export default function ClientsManagement({ user }: { user: User }) {
       ) : viewMode === "list" ? (
         <UsersTable
           users={filteredAndSortedUsers}
-          onUpdate={handleUpdateUser}
           onDelete={handleDeleteUser}
           user={user}
+          refetch={refetch}
+          isRefetching={isRefetching}
         />
       ) : (
         <UsersGrid
           users={filteredAndSortedUsers}
-          onUpdate={handleUpdateUser}
           onDelete={handleDeleteUser}
           user={user}
+          refetch={refetch}
+          isRefetching={isRefetching}
         />
       )}
 
