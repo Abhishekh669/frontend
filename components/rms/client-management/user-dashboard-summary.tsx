@@ -1,6 +1,7 @@
 "use client"
 import React from "react";
 import CountUp from "react-countup";
+
 export interface DashboardCounts {
   total_users: number;
   active_users: number;

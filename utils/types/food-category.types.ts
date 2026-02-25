@@ -78,3 +78,31 @@ export interface MenuItemApi {
   deleteMenuItems: (ids: string[]) => Promise<void>;
   toggleAvailability: (id: string, isAvailable: boolean) => Promise<void>;
 }
+
+
+// types.ts
+export interface CategoryCache {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id?: string | null;
+  level: number;
+  is_active: boolean;
+  display_order: number;
+}
+
+export interface MenuItemCache {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category_id: string;
+  is_available: boolean;
+  image_url?: string;
+}
+
+export interface MenuApiResponse {
+  categories: CategoryCache[];
+  category_children: Record<string, string[]>;
+  menu_items: Record<string, MenuItemCache[]>;
+}
