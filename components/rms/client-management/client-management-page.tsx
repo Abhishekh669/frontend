@@ -258,18 +258,36 @@ export default function ClientsManagement({ user }: { user: User }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className=" bg-background p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Manage staff members, roles, and permissions
-            </p>
-          </div>
+      <div className="relative mb-14">
 
-        </div>
+  {/* Subtle Gold Radial Glow */}
+  <div className="pointer-events-none absolute inset-0 
+    bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.06),transparent_50%)]" 
+  />
 
+  <div className="relative z-10 bg-card border border-border rounded-3xl p-10 shadow-sm">
+
+    {/* Header Top Row */}
+    {/* <div className="flex items-start justify-between mb-10"> */}
+
+      <div>
+        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+          User Management
+        </h1>
+
+        <p className="text-muted-foreground text-base mt-3 max-w-lg">
+          Manage staff members, roles and permissions with a refined enterprise interface.
+        </p>
+
+        {/* Gold Accent Divider */}
+        <div className="mt-6 h-[3px] w-20 bg-primary rounded-full" />
+      </div>
+
+    </div>
+
+        {/* Dashboard Summary */}
         <DashboardSummary data={data?.user_stats} />
+
         {/* Toolbar */}
         {
           hasPermission(user.role, "view:clients") && (

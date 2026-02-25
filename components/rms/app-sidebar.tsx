@@ -1,4 +1,18 @@
-import { Calculator, ChefHat, ChevronLeft, ChevronRight, ClipboardList, FileBarChart, Grid3X3, LayoutDashboard, LucideIcon, Package, Settings, Users, UtensilsCrossed } from "lucide-react";
+import {
+  Calculator,
+  ChefHat,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  FileBarChart,
+  Grid3X3,
+  LayoutDashboard,
+  LucideIcon,
+  Package,
+  Settings,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -7,12 +21,14 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { usePathname, useRouter} from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AvailableRoutes } from "@/utils/rbac/role-n-permissiona";
 import Link from "next/link";
 import { UserPropsTypes } from "../wrapper/rms-wrapper";
 import { hasRoutePermission } from "@/utils/helper/check-permission";
 import { ModeToggle } from "../shared/mode-toggle";
+import Image from "next/image";
+
 export interface RouteItem {
   title: string;
   path: string;
@@ -30,88 +46,111 @@ export const sidebarRoutes: RouteItem[] = [
   { title: "Raw Materials", path: AvailableRoutes.RAW_MATERIALS, icon: Package },
   { title: "Reports & Analysis", path: AvailableRoutes.REPORTS, icon: FileBarChart },
   { title: "Table Management", path: AvailableRoutes.TABLE_MANAGEMENT, icon: Grid3X3 },
+  { title: "Orders", path: AvailableRoutes.ORDER_MANAGEMENT, icon: ClipboardList },
+  { title: "Tables", path: AvailableRoutes.TABLE_MANAGEMENT, icon: Grid3X3 },
+  { title: "Menu Categories", path: AvailableRoutes.FOOD_CATEGORY, icon: UtensilsCrossed },
+  { title: "Inventory", path: AvailableRoutes.RAW_MATERIALS, icon: Package },
+  { title: "Reports", path: AvailableRoutes.REPORTS, icon: FileBarChart },
+  { title: "Cashier", path: AvailableRoutes.CASHIER_ROUTE, icon: Calculator },
+  { title: "Kitchen", path: AvailableRoutes.CHEF_ROUTE, icon: ChefHat },
+  { title: "Clients", path: AvailableRoutes.CLIENT_MANAGEMENT, icon: Users },
+  { title: "Attendance", path: AvailableRoutes.ATTENDANCE, icon: Users },
   { title: "Settings", path: AvailableRoutes.SETTINGS, icon: Settings },
 ];
 
 interface AppSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  user: UserPropsTypes
+  user: UserPropsTypes;
 }
 
 export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
   const pathname = usePathname();
-  const allowedRoutes = sidebarRoutes.filter((route) => hasRoutePermission(user.role, route.path))
   const router = useRouter();
-  if (!user) {
-    return null;
-  }
+
+  if (!user) return null;
+
+  const allowedRoutes = sidebarRoutes.filter((route) =>
+    hasRoutePermission(user.role, route.path)
+  );
+
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 ease-in-out flex flex-col",
-        collapsed ? "w-18" : "w-65"
+        "fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 ease-in-out",
+        "bg-sidebar border-r border-sidebar-border",
+        collapsed ? "w-[78px]" : "w-[240px]"
       )}
     >
-      {/* Logo Section */}
-      <div className="px-4 py-5 border-b border-sidebar-border">
-        {/* Top row: Logo + Text */}
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            collapsed && "justify-center"
-          )}
-        >
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
-            <UtensilsCrossed className="w-5 h-5 text-primary-foreground" />
+      {/* Logo */}
+      <div className="px-6 py-7 flex flex-col items-start border-b border-sidebar-border">
+        <div className={cn("flex items-center gap-3", collapsed && "justify-center w-full")}>
+          <div className="relative w-12 h-12">
+            <Image
+              src="/logo.png"
+              alt="DineX Logo"
+              fill
+              className="object-contain"
+            />
           </div>
 
           {!collapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-lg font-semibold text-sidebar-foreground truncate">
-                RestaurantPOS
+            <div>
+              <h1 className="text-base font-semibold tracking-widest text-sidebar-foreground">
+                DineX
               </h1>
-              <p className="text-xs text-sidebar-muted truncate">
-                Management System
+              <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+                Hospitality OS
               </p>
             </div>
           )}
         </div>
 
-        {/* Mode Toggle – always below logo */}
-        <div
-          className={cn(
-            "mt-4 flex",
-            collapsed ? "justify-center" : "justify-start"
-          )}
-        >
+        <div className={cn("mt-6 w-full", collapsed && "flex justify-center")}>
           <ModeToggle isCollapsed={collapsed} />
         </div>
       </div>
 
-
-
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-8 space-y-2 overflow-y-auto">
         {allowedRoutes.map((route) => {
           const isActive = pathname === route.path;
           const Icon = route.icon;
 
           const navItem = (
             <Link
-              onMouseEnter={()=>{
-                  router.prefetch(route.path);
-              }}
+              key={route.path}
               href={route.path}
+              onMouseEnter={() => router.prefetch(route.path)}
               className={cn(
-                "sidebar-item",
-                isActive && "sidebar-item-active",
+                "group relative flex items-center gap-4 px-4 py-3 text-sm transition-all duration-200",
+                "text-sidebar-foreground/70 hover:text-sidebar-foreground",
                 collapsed && "justify-center px-0"
               )}
             >
-              <Icon className="w-5 h-5 shrink-0" />
+              {/* Active Pill Indicator */}
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1.5 rounded-full bg-accent" />
+              )}
+
+              <Icon
+                className={cn(
+                  "w-5 h-5 transition-all",
+                  isActive
+                    ? "text-accent"
+                    : "group-hover:text-sidebar-foreground"
+                )}
+              />
+
               {!collapsed && (
-                <span className="truncate text-sm font-medium">{route.title}</span>
+                <span
+                  className={cn(
+                    "transition-all",
+                    isActive && "text-sidebar-foreground font-medium"
+                  )}
+                >
+                  {route.title}
+                </span>
               )}
             </Link>
           );
@@ -120,37 +159,38 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
             return (
               <Tooltip key={route.path} delayDuration={0}>
                 <TooltipTrigger asChild>{navItem}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
+                <TooltipContent side="right">
                   {route.title}
                 </TooltipContent>
               </Tooltip>
             );
           }
 
-          return <div key={route.path}>{navItem}</div>;
+          return navItem;
         })}
       </nav>
 
-      {/* User Section */}
-      <div className="border-t border-sidebar-border p-3">
+      {/* User */}
+      <div className="px-4 py-6 border-t border-sidebar-border">
         <div
           className={cn(
-            "flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer",
+            "flex items-center gap-3",
             collapsed && "justify-center"
           )}
         >
-          <Avatar className="w-9 h-9 shrink-0">
+          <Avatar className="w-9 h-9">
             <AvatarImage src={user.image} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+            <AvatarFallback className="bg-primary text-primary-foreground">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
+
           {!collapsed && (
-            <div className="overflow-hidden">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
+            <div>
+              <p className="text-sm font-medium text-sidebar-foreground">
                 {user.name}
               </p>
-              <p className="text-xs text-sidebar-muted truncate">
+              <p className="text-xs text-muted-foreground">
                 {user.email}
               </p>
             </div>
@@ -158,17 +198,17 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
         </div>
       </div>
 
-      {/* Collapse Button */}
+      {/* Toggle */}
       <Button
         variant="ghost"
         size="icon"
         onClick={onToggle}
-        className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-card border shadow-sm hover:bg-muted"
+        className="absolute -right-3 top-8 w-7 h-7 rounded-full bg-card border border-border shadow-md"
       >
         {collapsed ? (
-          <ChevronRight className="w-3.5 h-3.5 text-foreground" />
+          <ChevronRight className="w-4 h-4" />
         ) : (
-          <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
+          <ChevronLeft className="w-4 h-4" />
         )}
       </Button>
     </aside>
