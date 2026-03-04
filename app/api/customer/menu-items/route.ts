@@ -1,19 +1,11 @@
 import {  NextResponse } from "next/server";
 import axios from "axios";
-import { get_cookies } from "@/utils/helper/get-cookies";
 import { getErrorMessage } from "@/utils/helper/get-error-message";
 
 export async function GET() {
   try {
-    const userToken = await get_cookies("user_token")
 
-    if (!userToken) {
-      return NextResponse.json(
-        { success: false, error: "User not authorized" },
-        { status: 401 }
-      );
-    }
-
+    
     // ✅ Call backend service
     const res = await axios.get(
       `${process.env.NEXT_BACKEND_URL}/get-menu-n-categories`);

@@ -1,5 +1,5 @@
 import AttendanceCard from "@/components/rms/attendance/attendance-card";
-import { AttendanceManagementAction, EditDialogBoxAction } from "../rbac/role-n-permissiona";
+import { AttendanceManagementAction, EditDialogBoxAction, TableAction } from "../rbac/role-n-permissiona";
 
 export type Role = "admin" | "manager" | "cashier" | "chef" | "waiter" | "delivery_staff" | "customer";
 export type Gender = "male" | "other" | "female"
@@ -90,6 +90,11 @@ export type Permission =
   | typeof EditDialogBoxAction.EDIT_ROLE_CHEF
   | typeof EditDialogBoxAction.EDIT_ROLE_WAITER
   | typeof EditDialogBoxAction.EDIT_ROLE_CUSTOMER
+
+  | typeof TableAction.CREATE_TABLES
+  | typeof TableAction.VIEW_TABLES
+  | typeof TableAction.DELETE_TABLES
+  | typeof TableAction.UPDATE_TABLES
 
 
   | typeof AttendanceManagementAction.VIEW_ATTENDANCE

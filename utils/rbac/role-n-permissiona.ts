@@ -1,10 +1,17 @@
-import { Edit } from "lucide-react";
+import { Edit, Table } from "lucide-react";
 import { Role } from "../types/user.types";
 
 
 export const DashboardAction = {
   VIEW_DASHBOARD: "view:dashboard" as const,
 }
+
+export const TableAction = {
+  VIEW_TABLES: "view:tables" as const,
+  CREATE_TABLES: "create:tables" as const,
+  UPDATE_TABLES: "update:tables" as const,
+  DELETE_TABLES: "delete:tables" as const,
+};
 
 export const EditDialogBoxAction = {
   EDIT_EMAIL: "edit:email" as const,
@@ -140,6 +147,11 @@ export const rolePermissions: Record<Role, string[]> = {
 
   manager: [
 
+    TableAction.CREATE_TABLES,
+    TableAction.VIEW_TABLES,
+    TableAction.DELETE_TABLES,
+    TableAction.UPDATE_TABLES,
+
     EditDialogBoxAction.EDIT_PHONE,
     EditDialogBoxAction.EDIT_ROLE_DELIVERY_STAFF,
     EditDialogBoxAction.EDIT_ROLE_CASHIER,
@@ -206,6 +218,9 @@ export const rolePermissions: Record<Role, string[]> = {
     FoodCategoryManagementAction.VIEW_MENU,
 
     AttendanceManagementAction.VIEW_ATTENDANCE,
+    TableAction.VIEW_TABLES,
+    TableAction.UPDATE_TABLES,
+
   ],
 
   waiter: [
@@ -218,6 +233,10 @@ export const rolePermissions: Record<Role, string[]> = {
     TableManagementAction.UPDATE_TABLES,
     FoodCategoryManagementAction.VIEW_MENU,
     AttendanceManagementAction.VIEW_ATTENDANCE,
+    TableAction.CREATE_TABLES,
+    TableAction.VIEW_TABLES,
+    TableAction.UPDATE_TABLES,
+
 
   ],
 
@@ -227,6 +246,8 @@ export const rolePermissions: Record<Role, string[]> = {
     RawMaterialManagementAction.VIEW_RAW_MATERIALS,
 
     AttendanceManagementAction.VIEW_ATTENDANCE,
+    TableAction.VIEW_TABLES,
+
 
   ],
 
@@ -239,6 +260,8 @@ export const rolePermissions: Record<Role, string[]> = {
   ],
 
   customer: [
+    TableAction.VIEW_TABLES,
+
     FoodCategoryManagementAction.VIEW_MENU,
     OrderManagementAction.CREATE_ORDERS,
     OrderManagementAction.VIEW_ORDERS,

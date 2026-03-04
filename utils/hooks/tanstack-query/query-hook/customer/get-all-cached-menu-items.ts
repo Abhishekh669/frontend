@@ -5,9 +5,10 @@ import axios from "axios";
 
 export const fetchCachedMenuItems = async () => {
   try {
+
     const res = await axios.get(`/api/customer/menu-items`)
     const data  : MenuApiResponse = res.data;
-    
+    console.log("this is data okie  : ", data)
     return data;
   } catch (error) {
     throw new Error(getErrorMessage(error))

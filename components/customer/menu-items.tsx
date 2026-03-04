@@ -1,7 +1,14 @@
-"use client"
-import { MenuItemCache } from "@/utils/types/food-category.types";
-import React, { useMemo } from "react";
+"use client";
+
+import React, { useMemo, useState } from "react";
 import { Plus, ImageOff } from "lucide-react";
+import { toast } from "sonner";
+
+import { MenuItemCache } from "@/utils/types/food-category.types";
+import {
+  OrderItemInStore,
+  useOrderStore,
+} from "@/utils/store/customer-order/use-customer-order";
 
 interface MenuItemWithPath extends MenuItemCache {
   categoryPath: string[];
@@ -12,6 +19,13 @@ interface Props {
 }
 
 export const MenuItems: React.FC<Props> = ({ items }) => {
+  const { addOrder } = useOrderStore();
+
+  // quantity per menu item (id -> quantity)
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  const getQuantity = (id: string) => quantities[id] ?? 1;
+
   const groupedItems = useMemo(() => {
     const groups: Record<string, MenuItemWithPath[]> = {};
     items.forEach((item) => {
@@ -21,6 +35,29 @@ export const MenuItems: React.FC<Props> = ({ items }) => {
     });
     return groups;
   }, [items]);
+
+  const addOrderInCart = (menuItem: MenuItemCache) => {
+    if (!menuItem.id) return;
+
+    const quantity = getQuantity(menuItem.id);
+
+    const order: OrderItemInStore = {
+      menu_id: menuItem.id,
+      menu_name: menuItem.name,
+      menu_image: menuItem.image_url || "",
+      menu_price: menuItem.price,
+      quantity,
+      table_number: 1,
+    };
+
+    const status = addOrder(order);
+
+    if (!status) {
+      toast.error("Failed to add item",{
+        duration : 500
+      });
+    }
+  };
 
   if (!items.length) {
     return (
@@ -60,7 +97,7 @@ export const MenuItems: React.FC<Props> = ({ items }) => {
                         {item.name}
                       </h4>
                       {!item.is_available && (
-                        <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider bg-badge-unavailable text-primary-foreground px-1.5 py-0.5 rounded">
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider bg-badge-unavailable text-primary-foreground px-1.5 py-0.5 rounded">
                           Sold out
                         </span>
                       )}
@@ -73,26 +110,50 @@ export const MenuItems: React.FC<Props> = ({ items }) => {
                     )}
                   </div>
 
+                  {/* Price + Quantity + Button */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-price font-bold text-base">
                       ₹{item.price.toFixed(0)}
                     </span>
 
                     {item.is_available && (
-                      <button
-                        onClick={() => console.log("Add to cart:", item)}
-                        className="flex items-center gap-1 bg-primary text-primary-foreground text-xs font-semibold 
-                          px-4 py-2 rounded-lg hover:opacity-90 active:scale-95 transition-all duration-200 shadow-sm"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        ADD
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Quantity Input */}
+                        <input
+                          type="number"
+                          min={1}
+                          step={0.5}
+                          value={getQuantity(item.id)}
+                          onChange={(e) =>
+                            setQuantities((prev) => ({
+                              ...prev,
+                              [item.id]: Math.max(
+                                1,
+                                Number(e.target.value)
+                              ),
+                            }))
+                          }
+                          className="w-16 text-center text-sm border rounded-md px-2 py-1
+                            focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+
+                        {/* Add Button */}
+                        <button
+                          onClick={() => addOrderInCart(item)}
+                          className="flex items-center gap-1 bg-primary text-primary-foreground text-xs font-semibold
+                            px-3 py-2 rounded-lg hover:opacity-90 active:scale-95
+                            transition-all duration-200 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          ADD
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Image */}
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 self-center m-3 rounded-xl overflow-hidden bg-muted">
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 self-center m-3 rounded-xl overflow-hidden bg-muted">
                   {item.image_url ? (
                     <img
                       src={item.image_url}

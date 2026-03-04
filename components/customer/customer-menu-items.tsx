@@ -1,5 +1,5 @@
 "use client"
-import { buildCategoryTree, CategoryNode } from "@/utils/helper/cache";
+import { buildCategoryTree } from "@/utils/helper/cache";
 import {
   CategoryCache,
   MenuItemCache,
@@ -10,6 +10,10 @@ import { useGetCachedMenuItems } from "@/utils/hooks/tanstack-query/query-hook/c
 import { MobileCategoryHeader } from "./mobile-category-header";
 import { CategoryFilter } from "./category-filter";
 import { MenuItems } from "./menu-items";
+import { Menu } from "lucide-react";
+import { MobileMenuSidebar } from "./mobile-menu-sidebar";
+import { useOrderStore } from "@/utils/store/customer-order/use-customer-order";
+import { DesktopOrderSidebar } from "./desktop-order-sidebar";
 
 const buildCategoryPathMap = (
   categories: CategoryCache[],
@@ -104,15 +108,18 @@ const MenuSkeleton = () => (
 
 export const CustomerMenu: React.FC = () => {
   const { data, isLoading, isError } = useGetCachedMenuItems();
+  console.log("this is the data : :", data)
 
   // Add mounting state to handle client-side only rendering
   const [isMounted, setIsMounted] = useState(false);
-
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { orders } = useOrderStore()
+  const count = orders.length
 
   // Handle mounting
   useEffect(() => {
@@ -185,89 +192,8 @@ export const CustomerMenu: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleCategorySelect = (categoryId: string | null) => {
-    setSelectedCategoryId(categoryId);
-    setOpenDropdownId(null);
-  };
 
-  const renderCategoryButton = (category: CategoryNode) => {
-    const hasChildren = category.children && category.children.length > 0;
-    const isSelected = selectedCategoryId === category.id;
-    const isOpen = openDropdownId === category.id;
 
-    return (
-      <div key={category.id} className="relative">
-        <button
-          onClick={() => {
-            if (hasChildren) {
-              setOpenDropdownId(isOpen ? null : category.id);
-            } else {
-              handleCategorySelect(category.id);
-            }
-          }}
-          className={`
-            px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
-            flex items-center gap-1.5
-            ${isSelected
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "bg-secondary text-secondary-foreground hover:bg-muted"
-            }
-            ${hasChildren ? "pr-3" : ""}
-          `}
-        >
-          <span>{category.name}</span>
-          {hasChildren && (
-            <ChevronDown
-              className={`w-4 h-4 transition-transform duration-200 
-                ${isOpen ? "rotate-180" : ""} 
-                ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}
-              `}
-            />
-          )}
-        </button>
-
-        {/* Dropdown for child categories */}
-        {hasChildren && isOpen && (
-          <div
-            className="absolute top-full left-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border py-2 z-50"
-            ref={dropdownRef}
-          >
-            <div className="max-h-80 overflow-y-auto">
-              {/* Parent category option */}
-              <button
-                onClick={() => handleCategorySelect(category.id)}
-                className={`
-                  w-full text-left px-4 py-2.5 text-sm font-medium
-                  hover:bg-muted transition-colors
-                  ${selectedCategoryId === category.id ? "bg-primary/10 text-primary" : "text-foreground"}
-                `}
-              >
-                All {category.name}
-              </button>
-
-              {/* Child categories */}
-              {category.children.map((child) => (
-                <button
-                  key={child.id}
-                  onClick={() => handleCategorySelect(child.id)}
-                  className={`
-                    w-full text-left px-4 py-2.5 text-sm
-                    hover:bg-muted transition-colors
-                    ${selectedCategoryId === child.id ? "bg-primary/10 text-primary font-medium" : "text-foreground"}
-                  `}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    {child.name}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Show skeleton during SSR and initial client render
   if (!isMounted || isLoading) {
@@ -315,19 +241,46 @@ export const CustomerMenu: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4">
           {/* Logo and title row */}
           <div className="flex items-center gap-3 mb-3">
+            {/* Logo */}
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
               <UtensilsCrossed className="w-5 h-5 text-primary-foreground" />
             </div>
+
+            {/* Title */}
             <div className="flex-1 min-w-0">
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight truncate">
+              <h1 className="font-display text-xl sm:text-2xl font-bold truncate">
                 Our Menu
               </h1>
               <p className="text-xs text-muted-foreground">
-                {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""} available
+                {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}
               </p>
             </div>
-          </div>
 
+            {/* Hamburger (mobile only) */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="relative lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+
+              {/* Badge */}
+              {count > 0 && (
+                <span
+                  className="
+        absolute -top-1 -right-2
+        w-5 h-5
+        bg-red-500 text-white
+        text-[11px] font-bold
+        rounded-full
+        flex items-center justify-center
+        leading-none
+      "
+                >
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </button>
+          </div>
           {/* Search bar */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -349,7 +302,6 @@ export const CustomerMenu: React.FC = () => {
             )}
           </div>
 
-          {/* Categories scrollable row */}
           {/* Mobile category header */}
           <div className="lg:hidden">
             <MobileCategoryHeader
@@ -378,7 +330,7 @@ export const CustomerMenu: React.FC = () => {
       )}
 
       {/* Main content */}
-      <div className="max-w-6xl mx-auto flex">
+      <div className="max-w-6xl mx-auto flex justify-between">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block w-64 shrink-0 border-r border-border p-4 sticky top-0 h-screen overflow-y-auto">
           <h2 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -395,7 +347,14 @@ export const CustomerMenu: React.FC = () => {
         <main className="flex-1 px-4 py-5 sm:py-6">
           <MenuItems items={filteredItems} />
         </main>
+        <aside className="hidden lg:block w-96 shrink-0">
+          <DesktopOrderSidebar />
+        </aside>
       </div>
+      <MobileMenuSidebar
+        open={mobileSidebarOpen}
+        onOpenChange={setMobileSidebarOpen}
+      />
     </div>
   );
 };

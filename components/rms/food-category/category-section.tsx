@@ -51,20 +51,20 @@ export const CategoryDisplay = memo(function CategoryDisplay({
   const [showEditMenuItemDialog, setShowEditMenuItemDialog] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
 
-  
+
   // Loading states for operations
-  
+
   const queryClient = useQueryClient()
   const { startUpload } = useUploadThing("imageUploader");
-  
-  
-  
-  
+
+
+
+
   const { mutate: update_food_category, isPending: updating_food_category } = useUpdateFoodCategory();
   const { mutate: update_menu_item, isPending: updating_menu_item } = useUpdateMenuItems()
   const { mutate: delete_food_category, isPending: deleting_food_category } = useDeleteFoodCategory();
   const { mutate: delete_menu_items, isPending: deleting_menu_items } = useDeleteMenuItems()
-  
+
   const isUploading = uploadingImage || updating_menu_item
 
   // Get current category name for menu items
@@ -177,9 +177,9 @@ export const CategoryDisplay = memo(function CategoryDisplay({
             toast.success(res.message || "Category updated successfully")
             setShowEditCategoryDialog(false)
           }
-        }, 
-        onError   : (error) =>{
-           toast.error(error.message || 'Failed to update category')
+        },
+        onError: (error) => {
+          toast.error(error.message || 'Failed to update category')
         }
       })
     } catch (error) {
@@ -190,56 +190,68 @@ export const CategoryDisplay = memo(function CategoryDisplay({
 
   const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
     try {
+      setUploadingImage(true); // Set loading state at the beginning
 
-      setUploadingImage(()=> true )
       let updatedImage: string | null = data.image_url || null
-      
+
+      // If imageFile is undefined and there was an image URL (meaning user removed the image)
       if (!imageFile && data.image_url) {
         await removeMultipleImages([data.image_url])
         updatedImage = null;
       }
 
+      // If there's a new image file to upload
       if (imageFile) {
         const uploadResults = await startUpload([imageFile])
         if (uploadResults && uploadResults.length > 0) {
           updatedImage = uploadResults[0].ufsUrl;
 
+          // If there was an old image and it's different from the new one, delete it
           if (data.image_url && data.image_url !== updatedImage) {
             await removeMultipleImages([data.image_url])
           }
+        } else {
+          throw new Error('Failed to upload image');
         }
       }
-      setUploadingImage(()=> false )
-      const updatedData = { ...data, image_url: updatedImage }
+
+      // Prepare the updated data
+      const updatedData = {
+        ...data,
+        image_url: updatedImage
+      }
+
+      // Update the menu item with the new data
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.message && res.success) {
-
-            queryClient.invalidateQueries({ queryKey: ['get-all-by-slug', slugs.join('/')] })
+            queryClient.invalidateQueries({
+              queryKey: ['get-all-by-slug', slugs.join('/')]
+            })
             toast.success(res.message || "Menu item updated successfully")
             setShowEditMenuItemDialog(false)
           }
+          setUploadingImage(false); // Reset loading state
         },
         onError: (error) => {
           console.error('Failed to update menu item:', error)
           toast.error(error.message || 'Failed to update menu item')
+          setUploadingImage(false); // Reset loading state on error
         }
       })
     } catch (error) {
       console.error('Failed to update menu item:', error)
+      toast.error('Failed to upload image or update menu item')
+      setUploadingImage(false); // Reset loading state on error
       throw error
     }
   }
-
   const confirmDeleteCategories = async () => {
-    if (selectedCategories.size === 0 || deleting_food_category ) return
+    if (selectedCategories.size === 0 || deleting_food_category) return
 
-   
+
     try {
       const ids = Array.from(selectedCategories)
-
-     
-
       delete_food_category(ids, {
         onSuccess: (res) => {
           if (res.message && res.success) {
@@ -262,9 +274,9 @@ export const CategoryDisplay = memo(function CategoryDisplay({
 
   const confirmDeleteMenuItems = async () => {
     if (selectedMenuItems.size === 0 || deleting_menu_items) return
-    
+
     console.log("deleting : ", selectedMenuItems)
-   
+
     try {
       const ids = Array.from(selectedMenuItems)
       console.log("thisi s ids : ", ids)
@@ -285,7 +297,7 @@ export const CategoryDisplay = memo(function CategoryDisplay({
       })
     } catch (error) {
       console.error('Failed to delete menu items:', error)
-    } 
+    }
   }
 
   const handleDeleteSingleCategory = async (id: string) => {
@@ -298,9 +310,9 @@ export const CategoryDisplay = memo(function CategoryDisplay({
     setShowMenuItemDeleteDialog(true)
   }
 
-  const handleToggleMenuItemAvailability = async (item : MenuItem) => {
+  const handleToggleMenuItemAvailability = async (item: MenuItem) => {
     try {
-      update_menu_item({...item, is_available: !item.is_available}, {
+      update_menu_item({ ...item, is_available: !item.is_available }, {
         onSuccess: (res) => {
           if (res.message && res.success) {
             queryClient.invalidateQueries({ queryKey: ['get-all-by-slug', slugs.join('/')] })

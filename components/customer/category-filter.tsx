@@ -76,7 +76,7 @@ export const CategoryFilter: React.FC<Props> = ({
             {hasChildren && (
               <span
                 onClick={(e) => toggleExpand(cat.id, e)}
-                className="flex-shrink-0 p-0.5 rounded hover:bg-foreground/10 transition-colors"
+                className="shrink-0 p-0.5 rounded hover:bg-foreground/10 transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-3.5 h-3.5" />
