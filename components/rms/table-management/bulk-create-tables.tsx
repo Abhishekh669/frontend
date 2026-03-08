@@ -26,6 +26,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useCreateTable } from "@/utils/hooks/tanstack-query/mutate-hook/table/use-create-table";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Define a type for form state with string values
 type TableFormState = {
@@ -92,6 +93,7 @@ export function BulkCreateTables({ open, onOpenChange, onSuccess }: BulkCreateTa
   const [tables, setTables] = useState<TableFormState[]>([
     { table_number: "1", capacity: "4", status: "empty" }
   ]);
+    const queryClient = useQueryClient();
 
   const createBulkTables = useCreateTable();
 
@@ -179,6 +181,7 @@ export function BulkCreateTables({ open, onOpenChange, onSuccess }: BulkCreateTa
 
       const createTablesData = validateAndConvertToCreateTable(tables);
       await createBulkTables.mutateAsync(createTablesData);
+       queryClient.invalidateQueries({queryKey : ['get-tables']})
       onSuccess?.();
       setTables([{ table_number: "1", capacity: "4", status: "empty" }]); // Reset form
     } catch (error) {

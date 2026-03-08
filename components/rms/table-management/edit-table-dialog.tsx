@@ -32,6 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { TableType } from "@/utils/types/table.types";
 import { useUpdateTable } from "@/utils/hooks/tanstack-query/mutate-hook/table/use-update-table";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Schema for form with string values
 const formSchema = z.object({
@@ -71,6 +72,7 @@ interface EditTableDialogProps {
 export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogProps) {
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const updateTable = useUpdateTable();
+  const queryClient = useQueryClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -114,6 +116,7 @@ export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogPr
       };
 
       await updateTable.mutateAsync(updateData);
+      queryClient.invalidateQueries({queryKey : ['get-tables']})
       onOpenChange(false);
     } catch (error: any) {
       console.error("Failed to update table:", error);

@@ -1,4 +1,3 @@
-import AttendanceCard from "@/components/rms/attendance/attendance-card";
 import { AttendanceManagementAction, EditDialogBoxAction, TableAction } from "../rbac/role-n-permissiona";
 
 export type Role = "admin" | "manager" | "cashier" | "chef" | "waiter" | "delivery_staff" | "customer";

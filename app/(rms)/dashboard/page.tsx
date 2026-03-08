@@ -1,4 +1,5 @@
 import { getUserFromTokenAction } from "@/utils/actions/user/user.get.action";
+export const dynamic = "force-dynamic";
 
 async function page() {
     const res = await getUserFromTokenAction();
