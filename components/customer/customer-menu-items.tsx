@@ -108,7 +108,6 @@ const MenuSkeleton = () => (
 
 export const CustomerMenu: React.FC = () => {
   const { data, isLoading, isError } = useGetCachedMenuItems();
-  console.log("this is the data : :", data)
 
   // Add mounting state to handle client-side only rendering
   const [isMounted, setIsMounted] = useState(false);

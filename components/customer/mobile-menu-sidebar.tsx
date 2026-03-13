@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2, Phone, Search, User, Calendar, Clock, ShoppingBag, XCircle, Package, CheckCircle, Clock3, X, AlertCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -37,8 +37,10 @@ import { useOrderStore } from "@/utils/store/customer-order/use-customer-order";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useGetTables } from "@/utils/hooks/tanstack-query/query-hook/table/use-get-tables";
-import { CreateCustomerOrderRequest } from "@/utils/types/order.types";
+import { CreateCustomerOrderRequest, CustomerOrderRequest, OrderItemType, orderStatus } from "@/utils/types/order.types";
 import { useCreateOrderRequest } from "@/utils/hooks/tanstack-query/mutate-hook/order/use-create-order-request";
+import { useGetOrderRequestsByTableNumNPhone } from "@/utils/hooks/tanstack-query/query-hook/order/use-get-order-req-from-phone-n-table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   open: boolean;
@@ -56,16 +58,28 @@ export const MobileMenuSidebar: React.FC<Props> = ({
     clearOrders,
     getTotalPrice,
   } = useOrderStore();
-  
+
   const { data, isLoading, error } = useGetTables(true);
-  const {mutate : create_customer_order, isPending : is_creating_order} = useCreateOrderRequest();
+  const { mutate: create_customer_order, isPending: is_creating_order } = useCreateOrderRequest();
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [note, setNote] = useState("");
   const [activeTab, setActiveTab] = useState("order-request");
-  
+
   // Track order states
   const [trackTableNumber, setTrackTableNumber] = useState("");
   const [trackPhoneNumber, setTrackPhoneNumber] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  
+  const { 
+    data: orderData, 
+    isLoading: isTrackingLoading, 
+    isError: isTrackingError, 
+    refetch 
+  } = useGetOrderRequestsByTableNumNPhone(
+    trackPhoneNumber, 
+    parseInt(trackTableNumber) || 0,
+    true,
+  );
 
   // Reset states when orders change
   useEffect(() => {
@@ -79,9 +93,6 @@ export const MobileMenuSidebar: React.FC<Props> = ({
   const total = getTotalPrice();
   const isEmpty = orders.length === 0;
 
-  // Filter available tables (empty ones)
-
-  
   // Find the selected table object
   const selectedTableObj = tables.find(t => t.id === selectedTable);
 
@@ -109,7 +120,7 @@ export const MobileMenuSidebar: React.FC<Props> = ({
       return;
     }
 
-    if(is_creating_order)return;
+    if (is_creating_order) return;
     const orderMenuItems = orders.map(order => ({
       menu_item_id: order.menu_id,
       quantity: order.quantity,
@@ -123,8 +134,8 @@ export const MobileMenuSidebar: React.FC<Props> = ({
     };
 
     create_customer_order(customerOrderRequest, {
-      onSuccess : (res) =>{
-        if(res.success && res.message){
+      onSuccess: (res) => {
+        if (res.success && res.message) {
           toast.success(res.message || "successfully requested order")
           clearOrders();
           setSelectedTable("")
@@ -132,40 +143,10 @@ export const MobileMenuSidebar: React.FC<Props> = ({
           onOpenChange(false)
         }
       },
-      onError : (err ) =>{
+      onError: (err) => {
         toast.error(err.message || "failed to request order")
       }
     })
-   
-  };
-
-  const handleTrackOrder = () => {
-    if (!trackTableNumber || !trackPhoneNumber) {
-      toast.error("Please enter table number and phone number", { duration: 800 });
-      return;
-    }
-
-    if (trackPhoneNumber.length !== 10) {
-      toast.error("Please enter a valid 10-digit phone number", { duration: 800 });
-      return;
-    }
-
-    // Here you would typically fetch the order status
-    toast.success(`Tracking order for Table ${trackTableNumber}`, { duration: 800 });
-    
-    // Reset tracking fields
-    setTrackTableNumber("");
-    setTrackPhoneNumber("");
-  };
-
-  // Get status badge color
-  const getTableStatusColor = (status: string) => {
-    switch(status) {
-      case "empty": return "bg-green-500";
-      case "occupied": return "bg-orange-500";
-      case "booked": return "bg-blue-500";
-      default: return "bg-gray-500";
-    }
   };
 
   // Format phone number input
@@ -176,11 +157,140 @@ export const MobileMenuSidebar: React.FC<Props> = ({
     }
   };
 
+  const handleTrackSearch = () => {
+    if (!trackTableNumber || !trackPhoneNumber) {
+      toast.error("Please enter table number and phone number");
+      return;
+    }
+    if (trackPhoneNumber.length !== 10) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+    setHasSearched(true);
+    refetch();
+  };
+
+  const handleTrackReset = () => {
+    setTrackTableNumber("");
+    setTrackPhoneNumber("");
+    setHasSearched(false);
+  };
+
+  const orderRequest = orderData?.order_request as CustomerOrderRequest | undefined;
+  const hasOrders = orderRequest && orderRequest.order_items && orderRequest.order_items.length > 0;
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Calculate total amount
+  const calculateTotal = (items: OrderItemType[] = []) => {
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  // Get order status badge with appropriate styling and icon
+  const getOrderStatusBadge = (status: orderStatus) => {
+    const statusConfig = {
+      'approved': { 
+        label: 'Approved', 
+        icon: CheckCircle, 
+        className: 'bg-green-100 text-green-800 border-green-200',
+        iconColor: 'text-green-600'
+      },
+      'not-approved': { 
+        label: 'Pending Approval', 
+        icon: Clock3, 
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        iconColor: 'text-yellow-600'
+      },
+      'progress': { 
+        label: 'In Progress', 
+        icon: Clock, 
+        className: 'bg-blue-100 text-blue-800 border-blue-200',
+        iconColor: 'text-blue-600'
+      },
+      'completed': { 
+        label: 'Completed', 
+        icon: CheckCircle, 
+        className: 'bg-green-100 text-green-800 border-green-200',
+        iconColor: 'text-green-600'
+      },
+      'cancelled': { 
+        label: 'Cancelled', 
+        icon: X, 
+        className: 'bg-red-100 text-red-800 border-red-200',
+        iconColor: 'text-red-600'
+      }
+    };
+
+    const config = statusConfig[status] || statusConfig['not-approved'];
+    const Icon = config.icon;
+
+    return (
+      <Badge className={`${config.className} flex items-center gap-1 px-2 py-0.5 text-xs font-medium`}>
+        <Icon className={`h-3 w-3 ${config.iconColor}`} />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  // Get item status badge for individual items
+  const getItemStatusBadge = (status: orderStatus) => {
+    const statusConfig = {
+      'approved': { label: 'Approved', className: 'bg-green-100 text-green-800' },
+      'not-approved': { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
+      'progress': { label: 'Preparing', className: 'bg-blue-100 text-blue-800' },
+      'completed': { label: 'Ready', className: 'bg-green-100 text-green-800' },
+      'cancelled': { label: 'Cancelled', className: 'bg-red-100 text-red-800' }
+    };
+
+    const config = statusConfig[status];
+    return (
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  // Get table status color
+  const getTableStatusColor = (status: string) => {
+    switch (status) {
+      case "empty": return "bg-green-500";
+      case "occupied": return "bg-orange-500";
+      case "booked": return "bg-blue-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  // Get order status color for the main order
+  const getOrderStatusColor = (status: orderStatus) => {
+    switch (status) {
+      case "approved": return "bg-green-500";
+      case "not-approved": return "bg-yellow-500";
+      case "progress": return "bg-blue-500";
+      case "completed": return "bg-green-500";
+      case "cancelled": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-80 sm:w-96 p-0 flex flex-col h-full"
+        className="w-[85%] sm:w-96 p-0 flex flex-col h-full"
+        onInteractOutside={(e) => {
+          // This allows clicking outside to close
+          e.preventDefault();
+          onOpenChange(false);
+        }}
       >
         {/* Header - Fixed at top */}
         <SheetHeader className="px-4 py-3 border-b shrink-0">
@@ -190,20 +300,20 @@ export const MobileMenuSidebar: React.FC<Props> = ({
         </SheetHeader>
 
         {/* Tabs */}
-        <Tabs 
-          defaultValue="order-request" 
-          value={activeTab} 
+        <Tabs
+          defaultValue="order-request"
+          value={activeTab}
           onValueChange={setActiveTab}
-          className="flex-1 flex flex-col min-h-0"
+          className="w-full flex-1 flex flex-col min-h-0"
         >
           <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-transparent shrink-0">
-            <TabsTrigger 
+            <TabsTrigger
               value="order-request"
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary"
             >
               Order Request
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="your-orders"
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary"
             >
@@ -221,14 +331,14 @@ export const MobileMenuSidebar: React.FC<Props> = ({
                     Select Table
                   </label>
                   {selectedTableObj && (
-                    <Badge 
+                    <Badge
                       className={`${getTableStatusColor(selectedTableObj.status)} text-white text-xs`}
                     >
                       {selectedTableObj.status}
                     </Badge>
                   )}
                 </div>
-                
+
                 <Select
                   value={selectedTable}
                   onValueChange={setSelectedTable}
@@ -304,19 +414,7 @@ export const MobileMenuSidebar: React.FC<Props> = ({
                 {isEmpty ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
-                      <svg
-                        className="w-8 h-8 text-muted-foreground"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                        />
-                      </svg>
+                      <Package className="w-8 h-8 text-muted-foreground" />
                     </div>
                     <p className="text-sm text-muted-foreground font-medium">
                       Your cart is empty
@@ -336,8 +434,8 @@ export const MobileMenuSidebar: React.FC<Props> = ({
                         <div className="shrink-0">
                           <Avatar className="w-14 h-14 rounded-md">
                             {item.menu_image ? (
-                              <AvatarImage 
-                                src={item.menu_image} 
+                              <AvatarImage
+                                src={item.menu_image}
                                 alt={item.menu_name}
                                 className="object-cover"
                               />
@@ -411,7 +509,7 @@ export const MobileMenuSidebar: React.FC<Props> = ({
                         </div>
                       </div>
                     ))}
-                    
+
                     {/* Show total items count at bottom of scroll */}
                     <div className="text-xs text-center text-muted-foreground py-2">
                       {orders.length} items in cart • Total: {formatCurrency(total)}
@@ -422,75 +520,221 @@ export const MobileMenuSidebar: React.FC<Props> = ({
             </div>
           </TabsContent>
 
-          {/* Your Orders Tab - Track orders with table number and phone */}
+          {/* Your Orders Tab - Simplified Mobile-Friendly Tracking */}
           <TabsContent value="your-orders" className="flex-1 flex flex-col min-h-0 mt-0">
-            <div className="flex-1 px-4 py-6">
-              <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-semibold">Track Your Order</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Enter your table number and phone number to track your order status
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Table Number Input */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Table Number <span className="text-destructive">*</span>
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
+                {/* Simple Search Form */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Table Number
                     </label>
                     <Input
                       type="number"
-                      placeholder="Enter table number (e.g., 5)"
+                      placeholder="Enter table number"
                       value={trackTableNumber}
                       onChange={(e) => setTrackTableNumber(e.target.value)}
-                      className="h-11 text-base"
+                      className="w-full"
+                      min={1}
                     />
                   </div>
 
-                  {/* Phone Number Input */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Phone Number <span className="text-destructive">*</span>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Phone Number
                     </label>
-                    <Input
-                      type="tel"
-                      placeholder="Enter 10-digit phone number"
-                      value={trackPhoneNumber}
-                      onChange={handlePhoneChange}
-                      maxLength={10}
-                      className="h-11 text-base"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Enter the phone number used when placing the order
-                    </p>
-                  </div>
-
-                  {/* Track Button */}
-                  <Button
-                    onClick={handleTrackOrder}
-                    disabled={!trackTableNumber || !trackPhoneNumber || trackPhoneNumber.length !== 10}
-                    className="w-full h-11 text-base mt-4"
-                  >
-                    Track Order
-                  </Button>
-
-                  {/* Recent Orders Preview (Optional) */}
-                  <div className="mt-8">
-                    <h4 className="text-sm font-medium mb-3">Recent Orders</h4>
-                    <div className="space-y-2">
-                      {/* This would be populated from an API */}
-                      <div className="text-center text-sm text-muted-foreground py-8">
-                        <p>No recent orders found</p>
-                        <p className="text-xs mt-1">
-                          Your order history will appear here
-                        </p>
-                      </div>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        value={trackPhoneNumber}
+                        onChange={handlePhoneChange}
+                        className="pl-9 w-full"
+                        maxLength={10}
+                      />
                     </div>
                   </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      onClick={handleTrackSearch}
+                      disabled={!trackTableNumber || !trackPhoneNumber || trackPhoneNumber.length !== 10 || isTrackingLoading}
+                      className="flex-1"
+                    >
+                      {isTrackingLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Searching
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Search className="h-4 w-4" />
+                          Track Order
+                        </span>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTrackReset}
+                      className="px-3"
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </div>
+
+                <Separator />
+
+                {/* Search Results */}
+                {hasSearched && (
+                  <div className="space-y-4">
+                    {isTrackingLoading ? (
+                      // Loading State
+                      <div className="space-y-3">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                      </div>
+                    ) : isTrackingError ? (
+                      // Error State
+                      <div className="text-center py-8">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                          <XCircle className="h-6 w-6 text-red-600" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-900">Failed to load orders</p>
+                        <p className="text-xs text-muted-foreground mt-1">Please try again</p>
+                      </div>
+                    ) : !hasOrders ? (
+                      // No Orders Found
+                      <div className="text-center py-8">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 mb-3">
+                          <Package className="h-6 w-6 text-orange-600" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-900">No Orders Found</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Table {trackTableNumber} • {trackPhoneNumber}
+                        </p>
+                      </div>
+                    ) : orderRequest && (
+                      // Order Details - Enhanced with IDs and Status
+                      <div className="space-y-4">
+                        {/* Order Header with ID and Status */}
+                        <div className="bg-orange-50 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-orange-700">
+                                Order #{orderRequest.id.slice(0, 8)}
+                              </span>
+                              <span className={`w-2 h-2 rounded-full ${getOrderStatusColor(orderRequest.status)}`} />
+                            </div>
+                            {getOrderStatusBadge(orderRequest.status)}
+                          </div>
+                          
+                          {/* Session Info */}
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2 text-xs text-orange-600">
+                              <Clock className="h-3 w-3" />
+                              <span>{formatDate(orderRequest.table_session.open_time)}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] bg-white">
+                              Table {orderRequest.table_session.table_number}
+                            </Badge>
+                          </div>
+
+                          {/* Customer Info */}
+                          {(orderRequest.customer_name || orderRequest.customer_phone) && (
+                            <div className="mt-2 pt-2 border-t border-orange-200">
+                              {orderRequest.customer_name && (
+                                <div className="flex items-center gap-1 text-xs text-orange-700">
+                                  <User className="h-3 w-3" />
+                                  <span className="font-medium">{orderRequest.customer_name}</span>
+                                </div>
+                              )}
+                              {orderRequest.customer_phone && (
+                                <div className="flex items-center gap-1 text-xs text-orange-700 mt-0.5">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{orderRequest.customer_phone}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Note if exists */}
+                          {orderRequest.note && (
+                            <div className="mt-2 text-xs text-orange-600 bg-orange-100/50 p-1.5 rounded">
+                              <span className="font-medium">Note:</span> {orderRequest.note}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Items List with Individual Status */}
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Items ({orderRequest.order_items.length})
+                          </p>
+                          {orderRequest.order_items.map((item) => (
+                            <div key={item.id} className="flex gap-2 bg-gray-50 rounded-lg p-2">
+                              <div className="w-12 h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
+                                {item.menu_image ? (
+                                  <img src={item.menu_image} alt={item.menu_name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                    <Package className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium truncate">{item.menu_name}</p>
+                                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs font-semibold">₹{item.price}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      ₹{(item.price * item.quantity).toFixed(2)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    ID: {item.id.slice(0, 6)}...
+                                  </span>
+                                  {getItemStatusBadge(item.status)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Order Total */}
+                        <div className="flex justify-between items-center pt-3 border-t">
+                          <span className="text-sm font-medium">Total Amount</span>
+                          <span className="text-lg font-bold text-orange-600">
+                            ₹{calculateTotal(orderRequest.order_items).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Initial State */}
+                {!hasSearched && (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 mb-3">
+                      <Package className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">Track Your Order</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter your table and phone number to see your order status
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
 
@@ -528,10 +772,7 @@ export const MobileMenuSidebar: React.FC<Props> = ({
               >
                 {is_creating_order ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     Requesting...
                   </>
                 ) : (
