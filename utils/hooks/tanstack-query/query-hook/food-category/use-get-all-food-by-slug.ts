@@ -1,12 +1,18 @@
 import { getErrorMessage } from "@/utils/helper/get-error-message";
+import { MenuItemsResponse } from "@/utils/types/food-category.types";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axios from "axios";
+
+interface ApiFetchType {
+  success : boolean
+  menu_items : MenuItemsResponse[]
+}
 
 export const fetchFoodCategoriesBySlug = async (slug : string) => {
   try {
     const res = await axios.get(`/api/food-category/get-by-slug?slug=${slug}`)
     const data = res.data;
-    return data;
+    return data as ApiFetchType;
   } catch (error) {
     throw new Error(getErrorMessage(error))
   }

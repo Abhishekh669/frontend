@@ -22,7 +22,7 @@ import {
 import { User } from "@/utils/types/user.types"
 import { Category } from "@/utils/types/food-category.types"
 import { useGetFoodCategories } from "@/utils/hooks/tanstack-query/query-hook/food-category/use-get-all-food-category"
-import { createFoodCategory, NewCatType } from "@/utils/actions/food-category/food-category.post"
+import {  NewCatType } from "@/utils/actions/food-category/food-category.post"
 import { useCreateFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-create-food-category"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -51,7 +51,6 @@ interface UpdateCategoryType {
   id: string;
   name: string;
   is_active: boolean;
-  display_order: number;
 }
 
 function FoodManagementPage({ user }: { user: User }) {
@@ -65,6 +64,7 @@ function FoodManagementPage({ user }: { user: User }) {
   const [editFormData, setEditFormData] = useState<UpdateCategoryType | null>(null)
   
   const { data, isLoading, isError } = useGetFoodCategories()
+  console.log("thisis the  food cateogyur : ", data)
   const { mutate: create_food_category, isPending } = useCreateFoodCategory()
   const { mutate: update_food_category, isPending: updatingFoodCategory } = useUpdateFoodCategory();
   const { mutate: delete_food_category, isPending: deletingFoodCategory } = useDeleteFoodCategory()
@@ -83,7 +83,6 @@ function FoodManagementPage({ user }: { user: User }) {
     try {
       const data: NewCatType = {
         category_name: catName,
-        slug_path: [],
       }
       create_food_category(data, {
         onSuccess: (res) => {
@@ -171,7 +170,6 @@ function FoodManagementPage({ user }: { user: User }) {
       id: category.id,
       name: category.name,
       is_active: category.is_active,
-      display_order: category.display_order || 0
     })
   }
 
@@ -455,18 +453,6 @@ function FoodManagementPage({ user }: { user: User }) {
                               <Label htmlFor={`active-${cat.id}`} className="text-xs">
                                 Active
                               </Label>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs">Display Order:</Label>
-                              <Input
-                                type="number"
-                                value={editFormData?.display_order}
-                                onChange={(e) => handleEditChange('display_order', parseInt(e.target.value) || 0)}
-                                className="w-20 h-8 text-xs"
-                                min={0}
-                                disabled={updatingFoodCategory}
-                              />
                             </div>
                           </div>
                         </div>

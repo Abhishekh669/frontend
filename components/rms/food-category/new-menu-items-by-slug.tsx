@@ -5,12 +5,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { useGetFoodCategoriesBySlug } from '@/utils/hooks/tanstack-query/query-hook/food-category/use-get-all-food-by-slug'
 import NewMenuItemsPage from './new-menu-item-lists'
+import AddMenuItems from './new-add-menu-items'
 
-interface FoodCategoryBySlugProps {
+interface MenuItemsBySlugProps {
   slug: string
 }
 
-function FoodCategoryBySlug({ slug }: FoodCategoryBySlugProps) {
+function MenuItemsBySlug({ slug }: MenuItemsBySlugProps) {
   console.log("this is slugs i nslugs : ", slug)
   const { data, isLoading, isError, refetch } = useGetFoodCategoriesBySlug(slug) 
 
@@ -32,10 +33,12 @@ function FoodCategoryBySlug({ slug }: FoodCategoryBySlugProps) {
   return (
     <div className="w-full min-h-screen p-4 md:p-8 bg-background">
       <div className="max-w-7xl mx-auto space-y-6">
+        <AddMenuItems slug={slug}/>
+       <NewMenuItemsPage menuItems={menu_items} slugs={slug}  />
 
       </div>
     </div>
   )
 }
 
-export default memo(FoodCategoryBySlug)
+export default memo(MenuItemsBySlug)

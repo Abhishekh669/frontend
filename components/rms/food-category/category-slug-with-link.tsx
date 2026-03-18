@@ -10,7 +10,7 @@ function formatSlug(slug: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
-function CategoryHeaderWithSlug({ slugs }: { slugs: string[] }) {
+function CategoryHeaderWithSlug({ slugs }: { slugs: string }) {
   const isRoot = !slugs || slugs.length === 0
 
   return (
@@ -45,7 +45,7 @@ function CategoryHeaderWithSlug({ slugs }: { slugs: string[] }) {
               <span className="hidden sm:inline">All Categories</span>
               <span className="sm:hidden">All</span>
             </Link>
-
+{/* 
             {slugs?.map((slug, index) => {
               const href = "/food-category/" + slugs.slice(0, index + 1).join("/")
               const isLast = index === slugs.length - 1
@@ -73,7 +73,7 @@ function CategoryHeaderWithSlug({ slugs }: { slugs: string[] }) {
                   )}
                 </React.Fragment>
               )
-            })}
+            })} */}
           </div>
         </nav>
 

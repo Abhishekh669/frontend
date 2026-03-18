@@ -1,8 +1,7 @@
-import { CustomerMenu } from '@/components/customer/customer-menu-items';
+import NewMenuItemsPage from '@/components/customer/new-menu-items'
+
 function page() {
-  return (
-   <CustomerMenu />
-  )
+  return <NewMenuItemsPage />
 }
 
 export default page

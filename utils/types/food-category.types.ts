@@ -35,7 +35,7 @@ export interface CreateMenuItemType {
 
 
 export interface CreateMenuItems {
-  category_id : string;
+  category_slug : string;
   menu_items : CreateMenuItemType[];
 }
 
@@ -52,7 +52,6 @@ export interface UpdateCategoryType {
   id: string;
   name: string;
   is_active: boolean;
-  display_order: number;
 }
 
 
@@ -80,6 +79,11 @@ export interface MenuItemApi {
 }
 
 
+export interface MenuItemWithCategory extends MenuItem {
+  category_name: string
+  category_slug: string
+}
+
 // types.ts
 export interface CategoryCache {
   id: string;
@@ -105,4 +109,32 @@ export interface MenuApiResponse {
   categories: CategoryCache[];
   category_children: Record<string, string[]>;
   menu_items: Record<string, MenuItemCache[]>;
+}
+
+
+
+export interface MenuItemsResponse {
+  id: string
+  category_name: string
+  category_slug: string
+  name: string
+  description?: string | null
+  price: number
+  category_id: string
+  is_available: boolean
+  image_url?: string | null
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+
+export type CategoryMenuGroup = {
+  category_name: string
+  category_slug: string
+  menu_items: MenuItemsResponse[]
+}
+
+export type GroupedMenuResponse = {
+  [slug: string]: CategoryMenuGroup
 }

@@ -6,7 +6,6 @@ import { CreateMenuItems, } from "@/utils/types/food-category.types"
 import axios from "axios"
 export interface NewCatType {
     category_name: string
-    slug_path: string[]
 }
 
 export const DeleteMenuItems = async (menuItemIds: string[]) => {

@@ -53,9 +53,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: data.success,
-      breadcrumb : data?.data?.breadcrumb || [],
-      children: data?.data?.children || [],
-      menu_items : data?.data?.menu_items || [],
+      menu_items : data?.menu_items || [],
     }, {status : 200});
   } catch (error: any) {
     console.log("this is error : ",getErrorMessage(error))

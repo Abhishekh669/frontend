@@ -17,6 +17,7 @@ import { createUser } from "@/utils/actions/user/user.post.action"
 import { useUploadThing } from "@/utils/uploadthing/uploadthing-client"
 import { removeMultipleImages } from "@/utils/actions/uploadthing/delete-images"
 import { useQueryClient } from "@tanstack/react-query"
+import Image from "next/image"
 
 
 export function AddClientDialog() {
@@ -62,7 +63,7 @@ export function AddClientDialog() {
         try {
             const payload: AddUserFormValues = {
                 ...values,
-                image: null, 
+                image: null,
             }
             if (selectedImageFile) {
                 const uploadResults = await startUpload([selectedImageFile])
@@ -129,11 +130,15 @@ export function AddClientDialog() {
                                 className="relative w-32 h-32 rounded-full border-2 border-dashed border-border bg-muted/30 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors group"
                             >
                                 {imagePreview ? (
-                                    <img
-                                        src={imagePreview || "/placeholder.svg"}
-                                        alt="Preview"
-                                        className="w-full h-full rounded-full object-cover"
-                                    />
+                                    <div className="relative w-full h-full">
+                                        <Image
+                                            src={imagePreview || "/placeholder.svg"}
+                                            alt="Preview"
+                                            fill
+                                            className="rounded-full object-cover"
+                                            sizes="100px"
+                                        />
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                         <Upload className="w-6 h-6" />
