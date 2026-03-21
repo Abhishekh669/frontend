@@ -1,6 +1,6 @@
 import React from 'react'
 
-function ApprovalLayout({children } : {children : React.ReactNode}) {
+function ApprovalLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}

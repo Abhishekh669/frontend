@@ -7,7 +7,6 @@ export const fetchTables = async () => {
   try {
     const res = await axios.get(`/api/table/all`);
     const data = res.data;
-    console.log("this ishtedata of the tables : ", data)
     return {
       success : data.success as boolean,
       tables : data?.tables as TableType[] || [] as TableType[]
