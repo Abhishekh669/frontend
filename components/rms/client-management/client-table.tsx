@@ -30,7 +30,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { roleLabels, User } from "@/utils/types/user.types";
 import { EditUserDialog } from "./edit-client-dialogbox";
@@ -46,83 +46,39 @@ interface UsersTableProps {
   isLoading?: boolean;
 }
 
-export const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
+export const getInitials = (name: string) =>
+  name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-export const getAvatarColor = (name: string) => {
-  const colors = [
-    "bg-primary",
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-yellow-500",
-    "bg-purple-500",
-    "bg-pink-500",
-    "bg-indigo-500",
-    "bg-orange-500",
-  ];
-  const index = name.charCodeAt(0) % colors.length;
-  return colors[index];
-};
+const avatarColors = [
+  "bg-violet-500", "bg-blue-500", "bg-emerald-500",
+  "bg-amber-500", "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-orange-500",
+];
+export const getAvatarColor = (name: string) =>
+  avatarColors[name.charCodeAt(0) % avatarColors.length];
 
-// Skeleton loader for table rows
-const TableSkeleton = () => (
-  <>
-    {[1, 2, 3, 4, 5].map((i) => (
-      <TableRow key={i} className="animate-pulse">
-        <TableCell><div className="h-4 w-4 bg-gray-200 rounded"></div></TableCell>
-        <TableCell>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gray-200 rounded-full"></div>
-            <div>
-              <div className="h-4 w-32 bg-gray-200 rounded mb-1"></div>
-              <div className="h-3 w-40 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        </TableCell>
-        <TableCell><div className="h-6 w-20 bg-gray-200 rounded-md"></div></TableCell>
-        <TableCell><div className="h-6 w-16 bg-gray-200 rounded-md"></div></TableCell>
-        <TableCell><div className="h-6 w-16 bg-gray-200 rounded-md"></div></TableCell>
-        <TableCell><div className="h-4 w-24 bg-gray-200 rounded"></div></TableCell>
-        <TableCell><div className="h-4 w-20 bg-gray-200 rounded"></div></TableCell>
-        <TableCell><div className="h-4 w-24 bg-gray-200 rounded"></div></TableCell>
-        <TableCell><div className="flex gap-1"><div className="h-8 w-8 bg-gray-200 rounded"></div><div className="h-8 w-8 bg-gray-200 rounded"></div></div></TableCell>
-      </TableRow>
-    ))}
-  </>
-);
+const COL_HEADERS = ["User", "Role", "Status", "Gender", "Phone", "Salary", "Created", "Actions"];
 
-export function UsersTable({ 
-  users, 
-  onDelete, 
-  user: u, 
-  refetch, 
+export function UsersTable({
+  users,
+  onDelete,
+  user: u,
+  refetch,
   isRefetching,
-  isLoading = false 
+  isLoading = false,
 }: UsersTableProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [indeterminate, setIndeterminate] = useState(false);
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
   const allSelected = users.length > 0 && selectedUserIds.length === users.length;
   const someSelected = selectedUserIds.length > 0 && selectedUserIds.length < users.length;
 
-  useEffect(() => {
-    setIndeterminate(someSelected);
-  }, [someSelected]);
+  useEffect(() => setIndeterminate(someSelected), [someSelected]);
 
-  const toggleSelectUser = (userId: string) => {
+  const toggleSelectUser = (userId: string) =>
     setSelectedUserIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
-  };
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -130,7 +86,7 @@ export function UsersTable({
       setImagesToDelete([]);
     } else {
       setSelectedUserIds(users.map((u) => u.id));
-      setImagesToDelete(users.filter(u => u?.image && u.image.length > 0).map(u => u.image));
+      setImagesToDelete(users.filter((u) => u?.image?.length > 0).map((u) => u.image));
     }
   };
 
@@ -138,112 +94,87 @@ export function UsersTable({
     if (selectedUserIds.length === 0) return;
     onDelete(selectedUserIds);
     if (imagesToDelete.length > 0) {
-      const res = await removeMultipleImages(imagesToDelete)
-      if (res.success) {
-        setImagesToDelete([])
-      }
+      const res = await removeMultipleImages(imagesToDelete);
+      if (res.success) setImagesToDelete([]);
     }
     setSelectedUserIds([]);
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-10"><div className="h-4 w-4 bg-gray-200 rounded"></div></TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Salary</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableSkeleton />
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
-
   return (
     <>
-      {/* Bulk Delete Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Users Table View</h2>
+      {/* ── Table Toolbar ── */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+        <div className="flex items-center gap-3">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  onClick={() => refetch()}
-                  className="h-8 w-8"
+                  onClick={refetch}
+                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
                   disabled={isRefetching}
                 >
-                  <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={cn("h-3.5 w-3.5", isRefetching && "animate-spin")} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>{isRefetching ? 'Refreshing...' : 'Reload'}</p>
+              <TooltipContent className="rounded-lg text-xs">
+                {isRefetching ? "Refreshing…" : "Reload"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
           {isRefetching && (
-            <span className="text-xs text-muted-foreground animate-pulse">
-              Updating...
+            <span className="text-[11px] text-muted-foreground animate-pulse">Updating…</span>
+          )}
+
+          {selectedUserIds.length > 0 && (
+            <span className="text-xs font-medium text-foreground">
+              {selectedUserIds.length} selected
             </span>
           )}
         </div>
 
+        {/* Bulk Delete */}
         {selectedUserIds.length > 0 && hasPermission(u.role, "delete:clients") && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex items-center gap-1">
-                <Trash2 className="w-4 h-4" />
-                Delete {selectedUserIds.length} selected
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 rounded-xl text-xs gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete {selectedUserIds.length}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="rounded-2xl border border-border">
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete User(s)</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete the following users? This cannot be undone.
+                <AlertDialogTitle className="text-sm font-semibold">Delete User(s)</AlertDialogTitle>
+                <AlertDialogDescription className="text-xs">
+                  This will permanently delete the selected users. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              {/* Selected users list */}
-              <div className="p-3 max-h-60 overflow-y-auto">
+              <div className="max-h-52 overflow-y-auto space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
                 {selectedUserIds.map((id) => {
                   const user = users.find((u) => u.id === id);
                   if (!user) return null;
                   return (
-                    <div key={id} className="flex items-center justify-between gap-2 py-1 px-2 border rounded-md mb-1">
+                    <div key={id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-card border border-border/50">
                       <div className="flex items-center gap-2">
                         <Avatar className="w-6 h-6">
-                          {user.image ? (
-                            <AvatarImage src={user.image} />
-                          ) : (
-                            <AvatarFallback className={cn("text-white text-xs font-medium", getAvatarColor(user.name))}>
-                              {getInitials(user.name)}
-                            </AvatarFallback>
-                          )}
+                          {user.image
+                            ? <AvatarImage src={user.image} />
+                            : <AvatarFallback className={cn("text-white text-[10px]", getAvatarColor(user.name))}>{getInitials(user.name)}</AvatarFallback>}
                         </Avatar>
-                        <span className="text-sm font-medium">{user.name}</span>
-                        <span className={`role-${user.role} rounded-md px-2`}>{user.role}</span>
+                        <span className="text-xs font-medium text-foreground">{user.name}</span>
+                        <span className={cn("text-[10px] px-1.5 py-0.5 rounded-md font-medium", `role-${user.role}`)}>{user.role}</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-red-500 hover:bg-red-100"
-                        onClick={() =>
-                          setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))
-                        }
+                        className="h-5 w-5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))}
                       >
                         <X className="w-3 h-3" />
                       </Button>
@@ -252,10 +183,10 @@ export function UsersTable({
                 })}
               </div>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="rounded-xl text-sm h-9">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="rounded-xl text-sm h-9 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete {selectedUserIds.length} user(s)
                 </AlertDialogAction>
@@ -265,34 +196,34 @@ export function UsersTable({
         )}
       </div>
 
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+      {/* ── Table ── */}
+      <div className={cn("overflow-x-auto", isRefetching && "opacity-60 pointer-events-none transition-opacity")}>
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-10">
+            <TableRow className="bg-muted/30 hover:bg-muted/30 border-border">
+              <TableHead className="w-10 pl-5">
                 <Checkbox
                   checked={allSelected || indeterminate}
                   onCheckedChange={toggleSelectAll}
                   disabled={isRefetching || users.length === 0}
-                  className={cn(
-                    indeterminate && "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                  )}
+                  className="rounded-md"
                 />
               </TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Salary</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              {COL_HEADERS.map((h) => (
+                <TableHead
+                  key={h}
+                  className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground py-3"
+                >
+                  {h}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-10 text-sm text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -300,85 +231,112 @@ export function UsersTable({
               users.map((user) => {
                 const isSelected = selectedUserIds.includes(user.id);
                 return (
-                  <TableRow 
-                    key={user.id} 
+                  <TableRow
+                    key={user.id}
                     className={cn(
-                      "hover:bg-muted/30",
-                      isRefetching && "opacity-60 pointer-events-none"
+                      "border-border/60 hover:bg-muted/20 transition-colors",
+                      isSelected && "bg-accent/5"
                     )}
                   >
-                    <TableCell>
+                    {/* Checkbox */}
+                    <TableCell className="pl-5 py-3">
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelectUser(user.id)}
                         disabled={isRefetching}
+                        className="rounded-md"
                       />
                     </TableCell>
-                    <TableCell>
+
+                    {/* User */}
+                    <TableCell className="py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-9 h-9">
-                          {user.image ? (
-                            <AvatarImage src={user.image} />
-                          ) : (
-                            <AvatarFallback className={cn("text-white text-xs font-medium", getAvatarColor(user.name))}>
-                              {getInitials(user.name)}
-                            </AvatarFallback>
-                          )}
+                        <Avatar className="w-9 h-9 rounded-xl ring-1 ring-border">
+                          {user.image
+                            ? <AvatarImage src={user.image} className="rounded-xl" />
+                            : <AvatarFallback className={cn("text-white text-xs font-semibold rounded-xl", getAvatarColor(user.name))}>{getInitials(user.name)}</AvatarFallback>}
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">{user.name}</p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-sm font-semibold text-foreground leading-tight">{user.name}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{user.email}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className={cn("px-2 py-1 rounded-md text-xs font-semibold", `role-${user.role}`)}>
+
+                    {/* Role */}
+                    <TableCell className="py-3">
+                      <span className={cn("px-2.5 py-1 rounded-lg text-[11px] font-semibold", `role-${user.role}`)}>
                         {roleLabels[user.role]}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <div className={cn("flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold w-fit", user.is_active ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300")}>
-                        <span className={cn("w-1.5 h-1.5 rounded-full", user.is_active ? "bg-emerald-500" : "bg-red-500")} />
+
+                    {/* Status */}
+                    <TableCell className="py-3">
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium",
+                        user.is_active
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", user.is_active ? "bg-emerald-500" : "bg-muted-foreground")} />
                         {user.is_active ? "Active" : "Inactive"}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className={`capitalize gender-${user.gender} px-2 py-1 rounded-md`}>
-                        {user.gender || "others"}
+
+                    {/* Gender */}
+                    <TableCell className="py-3">
+                      <span className={cn("capitalize px-2.5 py-1 rounded-lg text-[11px] font-medium", `gender-${user.gender}`)}>
+                        {user.gender || "Other"}
                       </span>
                     </TableCell>
-                    <TableCell>{user.phone || "-"}</TableCell>
-                    <TableCell>{user.salary > 0 ? `Rs ${user.salary.toLocaleString()}` : "-"}</TableCell>
-                    <TableCell>{format(user.created_at, "MMM d, yyyy")}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
+
+                    {/* Phone */}
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      {user.phone || "—"}
+                    </TableCell>
+
+                    {/* Salary */}
+                    <TableCell className="py-3 text-sm font-medium text-foreground">
+                      {user.salary > 0 ? `Rs ${user.salary.toLocaleString()}` : "—"}
+                    </TableCell>
+
+                    {/* Created */}
+                    <TableCell className="py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {format(user.created_at, "MMM d, yyyy")}
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-0.5">
                         {hasPermission(u.role, "update:clients") && (
                           <EditUserDialog user={user} />
                         )}
                         {hasPermission(u.role, "delete:clients") && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-destructive hover:text-destructive" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                                 disabled={isRefetching}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="rounded-2xl border border-border">
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete {user.name}? This action cannot be undone.
+                                <AlertDialogTitle className="text-sm font-semibold">Delete User</AlertDialogTitle>
+                                <AlertDialogDescription className="text-xs">
+                                  Are you sure you want to delete{" "}
+                                  <span className="font-medium text-foreground">{user.name}</span>?
+                                  This cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel className="rounded-xl text-sm h-9">Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => onDelete([user.id])}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  className="rounded-xl text-sm h-9 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
                                 </AlertDialogAction>
@@ -398,3 +356,6 @@ export function UsersTable({
     </>
   );
 }
+
+
+

@@ -220,7 +220,6 @@ function NewAllMenuItemsGrouped() {
                 </td>
 
                 <td className="p-3 relative ">
-                  import Image from "next/image";
 
                   {item.image_url ? (
                     <Image

@@ -1,10 +1,7 @@
+import ApproveUserPage from "@/components/customer/approve-user/approve-user-page"
 
 function page() {
-  return (
-    <div>
-      
-    </div>
-  )
+  return <ApproveUserPage />
 }
 
 export default page

@@ -8,7 +8,10 @@ import axios from "axios"
 
 export const CreateCustomerApprovalRequest = async(sessionData : SessionCheckDataType) =>{
     try {
-        const res = await axios.post(`${process.env.NEXT_BACKEND_URL}/api/v1/order-service/table-approval`, sessionData)
+        const res = await axios.post(`${process.env.NEXT_BACKEND_URL}/api/v1/order-service/table-approval`, {
+            phone : sessionData.phone_number,
+            table_number : sessionData.table_number,
+        })
         const data = res.data
         if(!data?.success){
             throw new Error(data?.error || "failed to created request")

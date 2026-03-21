@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Filter, ArrowUpDown, List, LayoutGrid, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, List, LayoutGrid, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,18 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Role, roleLabels, User } from "@/utils/types/user.types";
 import { AddClientDialog } from "./add-client-dialogbox";
 import { UsersTable } from "./client-table";
 import { UsersGrid } from "./client-grid";
 import { useGetAllUsers } from "@/utils/hooks/tanstack-query/query-hook/user/use-get-all-users";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { UsersError } from "./users-error";
 import { UsersTableSkeleton } from "./user-table-skeleton";
 import { UsersGridSkeleton } from "./user-grid-skelton";
@@ -31,25 +32,17 @@ import { useDeleteUsers } from "@/utils/hooks/tanstack-query/mutate-hook/user/us
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import DashboardSummary from "./user-dashboard-summary";
-import { hasPermission } from "@/utils/helper/check-permission";
+import { cn } from "@/lib/utils";
 
 type SortField = "name" | "email" | "role" | "salary" | "created_at";
 type SortDirection = "asc" | "desc";
 
-const sortOptions: { field: SortField; label: string }[] = [
-  { field: "name", label: "Name" },
-  { field: "email", label: "Email" },
-  { field: "role", label: "Role" },
-  { field: "salary", label: "Salary" },
-  { field: "created_at", label: "Date Created" },
-];
-
 export type QueryType = {
-  page: number
-  limit: number
-  search: string
-  oldestFirst: boolean
-}
+  page: number;
+  limit: number;
+  search: string;
+  oldestFirst: boolean;
+};
 
 export const itemsPerPage = 15;
 
@@ -60,7 +53,7 @@ export default function ClientsManagement({ user }: { user: User }) {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [userStatus, setUserStatus] = useState<"all" | "is_active" | "is_inactive">("all")
+  const [userStatus, setUserStatus] = useState<"all" | "is_active" | "is_inactive">("all");
 
   const queryClient = useQueryClient();
 
@@ -77,54 +70,39 @@ export default function ClientsManagement({ user }: { user: User }) {
 
   const totalUsers = data?.total || 0;
   const totalPages = totalUsers ? Math.ceil(totalUsers / query.limit) : 1;
-
   const currentPage = query.page;
   const isFirstPage = currentPage === 0;
   const isLastPage = currentPage === totalPages - 1;
 
-  // 🔍 Debounced Search → backend
   useEffect(() => {
     const timer = setTimeout(() => {
-      setQuery((prev) => ({
-        ...prev,
-        search: searchQuery,
-        page: 0,
-      }));
+      setQuery((prev) => ({ ...prev, search: searchQuery, page: 0 }));
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 📥 Sync API users
   useEffect(() => {
     if (!isLoading && data?.users) {
       setUsers(data.users);
     }
   }, [isLoading, data?.users]);
-  console.log("this is users : ", data)
 
-  // 🧠 Client-side filter + sort (except created_at)
   const filteredAndSortedUsers = useMemo(() => {
     let result = users.filter((user) => {
       const matchesSearch =
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.phone.toLowerCase().includes(searchQuery.toLowerCase());
-
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
-
       const matchesStatus =
-        (userStatus === "all") ||
+        userStatus === "all" ||
         (userStatus === "is_active" && user.is_active) ||
         (userStatus === "is_inactive" && !user.is_active);
-
-
       return matchesSearch && matchesRole && matchesStatus;
     });
 
     result.sort((a, b) => {
       let comparison = 0;
-
       switch (sortField) {
         case "name":
         case "email":
@@ -135,28 +113,21 @@ export default function ClientsManagement({ user }: { user: User }) {
           comparison = a.salary - b.salary;
           break;
         case "created_at":
-          comparison = 0; // already sorted by DB
+          comparison = 0;
           break;
       }
-
       return sortDirection === "asc" ? comparison : -comparison;
     });
 
     return result;
   }, [users, searchQuery, userStatus, roleFilter, sortField, sortDirection]);
 
-  // 🔁 Hybrid Sort Handler
   const handleSort = (field: SortField) => {
     if (field === "created_at") {
-      setQuery((prev) => ({
-        ...prev,
-        oldestFirst: !prev.oldestFirst,
-        page: 0,
-      }));
+      setQuery((prev) => ({ ...prev, oldestFirst: !prev.oldestFirst, page: 0 }));
       setSortField("created_at");
       return;
     }
-
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -165,360 +136,262 @@ export default function ClientsManagement({ user }: { user: User }) {
     }
   };
 
-  // 📄 Pagination
   const handlePageChange = (page: number) => {
     if (page < 0 || page > totalPages - 1 || isLoading) return;
-
-    setQuery((prev) => ({
-      ...prev,
-      page,
-    }));
-
+    setQuery((prev) => ({ ...prev, page }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 📏 Limit Selector (≤ itemsPerPage)
   const handleLimitChange = (value: string) => {
     const limit = Math.min(Number(value), itemsPerPage);
-
-    setQuery((prev) => ({
-      ...prev,
-      limit,
-      page: 0,
-    }));
+    setQuery((prev) => ({ ...prev, limit, page: 0 }));
   };
 
-
-
-  // 🧮 Pagination window
   const getVisiblePages = () => {
     const visiblePages: number[] = [];
     const windowSize = 2;
-
     let startPage = Math.max(0, currentPage - windowSize);
     let endPage = Math.min(totalPages - 1, currentPage + windowSize);
-
-    if (currentPage <= windowSize) {
-      endPage = Math.min(totalPages - 1, 2 * windowSize);
-    }
-
-    if (currentPage >= totalPages - 1 - windowSize) {
-      startPage = Math.max(0, totalPages - 1 - 2 * windowSize);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      visiblePages.push(i);
-    }
-
+    if (currentPage <= windowSize) endPage = Math.min(totalPages - 1, 2 * windowSize);
+    if (currentPage >= totalPages - 1 - windowSize) startPage = Math.max(0, totalPages - 1 - 2 * windowSize);
+    for (let i = startPage; i <= endPage; i++) visiblePages.push(i);
     return visiblePages;
   };
 
-
   const handleDeleteUser = (userIds: string[]) => {
-
-
     delete_users(userIds, {
       onSuccess: (res) => {
-        console.log("this is response : ", res)
         if (res.success && res.message) {
           queryClient.invalidateQueries({ queryKey: ["get-all-users"] });
-
-          toast.success(res.message)
-
+          toast.success(res.message);
         } else if (res.error) {
           toast.error(res.error);
         }
       },
       onError: (err) => {
-        console.log("this is err : ", err)
-        toast.error(err?.message || 'something went wrong')
-      }
-    })
-
-
+        toast.error(err?.message || "something went wrong");
+      },
+    });
   };
 
-
-
-
-  const getContentForUserStatus = (status: string) => {
-    switch (status) {
-      case "all":
-        return "All"
-      case "is_active":
-        return "Active"
-      case "is_inactive":
-        return "Inactive"
-      default:
-        return "all"
-    }
-  }
-
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="relative mb-14">
+    <div className="min-h-screen space-y-8 px-1">
 
-  {/* Subtle Gold Radial Glow */}
-  <div className="pointer-events-none absolute inset-0 
-    bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.06),transparent_50%)]" 
-  />
+      {/* ── Page Header ── */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card px-8 py-8 shadow-sm">
+        {/* Subtle gold radial glow top-right */}
+        <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[radial-gradient(circle,var(--color-accent)/12%,transparent_70%)]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
-  <div className="relative z-10 bg-card border border-border rounded-3xl p-10 shadow-sm">
-
-    {/* Header Top Row */}
-    {/* <div className="flex items-start justify-between mb-10"> */}
-
-      <div>
-        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-          User Management
-        </h1>
-
-        <p className="text-muted-foreground text-base mt-3 max-w-lg">
-          Manage staff members, roles and permissions with a refined enterprise interface.
-        </p>
-
-        {/* Gold Accent Divider */}
-        <div className="mt-6 h-[3px] w-20 bg-primary rounded-full" />
-      </div>
-
-    </div>
-
-        {/* Dashboard Summary */}
-        <DashboardSummary data={data?.user_stats} />
-
-        {/* Toolbar */}
-        {
-          hasPermission(user.role, "view:clients") && (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                {/* Role Filter */}
-                <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "all")}>
-                  <SelectTrigger className="w-40">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Filter by role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    {Object.entries(roleLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Sort */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ArrowUpDown className="w-4 h-4" />
-                      Sort: {sortOptions.find(o => o.field === sortField)?.label}
-                      {sortField === "created_at" ? (
-                        query.oldestFirst ? (
-                          <ArrowUp className="w-3 h-3" />
-                        ) : (
-                          <ArrowDown className="w-3 h-3" />
-                        )
-                      ) : sortDirection === "asc" ? (
-                        <ArrowUp className="w-3 h-3" />
-                      ) : (
-                        <ArrowDown className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="start">
-                    {sortOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.field}
-                        onClick={() => handleSort(option.field)}
-                        className="flex items-center justify-between"
-                      >
-                        {option.label}
-                        {sortField === option.field && (
-                          option.field === "created_at" ? (
-                            query.oldestFirst ? (
-                              <ArrowUp className="w-3 h-3 ml-2" />
-                            ) : (
-                              <ArrowDown className="w-3 h-3 ml-2" />
-                            )
-                          ) : sortDirection === "asc" ? (
-                            <ArrowUp className="w-3 h-3 ml-2" />
-                          ) : (
-                            <ArrowDown className="w-3 h-3 ml-2" />
-                          )
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Page Size */}
-                <Select value={String(query.limit)} onValueChange={handleLimitChange}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Page size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 15, 20].map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size} / page
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-
-                {/* active and inactive user  */}
-                <Select value={userStatus} onValueChange={(value) => setUserStatus(value as "all" | "is_active" | "is_inactive")}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="All /User Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["all", "is_active", "is_inactive"].map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {getContentForUserStatus(status)} - User Status
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-
-
-
-              </div>
-
-              {/* Search + View */}
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search users..."
-                    className="pl-9 w-70"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex items-center border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === "list" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode("list")}
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "grid" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </Button>
-                </div>
-                <AddClientDialog />
-              </div>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <span className="inline-block w-1 h-5 rounded-full bg-accent" />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">
+                User Management
+              </p>
             </div>
-          )
-        }
-
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Team & Staff Directory
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md">
+              Manage staff members, roles and permissions across your organization.
+            </p>
+          </div>
+          <AddClientDialog />
+        </div>
       </div>
 
-      {/* Table / Grid */}
-      {isError ? (
-        <UsersError onRetry={() => setQuery((q) => ({ ...q }))} title="users" />
-      ) : isLoading ? (
-        viewMode === "list" ? (
-          <UsersTableSkeleton rows={query.limit} />
+      {/* ── Dashboard Summary ── */}
+      <DashboardSummary data={data?.user_stats} />
+
+      {/* ── Toolbar ── */}
+      <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+          {/* Left – Filters */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground pr-1">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
+            </div>
+
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "all")}>
+              <SelectTrigger className="h-8 text-xs w-[140px] rounded-xl border-border bg-muted/40 hover:bg-muted transition-colors">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Roles</SelectItem>
+                {Object.entries(roleLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={userStatus} onValueChange={(value) => setUserStatus(value as any)}>
+              <SelectTrigger className="h-8 text-xs w-[120px] rounded-xl border-border bg-muted/40 hover:bg-muted transition-colors">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="is_active">Active</SelectItem>
+                <SelectItem value="is_inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={String(query.limit)} onValueChange={handleLimitChange}>
+              <SelectTrigger className="h-8 text-xs w-[105px] rounded-xl border-border bg-muted/40 hover:bg-muted transition-colors">
+                <SelectValue placeholder="15 / Page" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {[5, 10, 15, 20].map((size) => (
+                  <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Right – Search + View Toggle */}
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                className="h-8 pl-9 pr-3 text-xs w-[210px] rounded-xl border-border bg-muted/40 hover:bg-muted focus:bg-background transition-colors placeholder:text-muted-foreground/60"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* View toggle */}
+            <div className="flex items-center rounded-xl border border-border bg-muted/40 p-0.5 gap-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 w-7 rounded-lg p-0 transition-all",
+                  viewMode === "list"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setViewMode("list")}
+              >
+                <List className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 w-7 rounded-lg p-0 transition-all",
+                  viewMode === "grid"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setViewMode("grid")}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content Area ── */}
+      <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+        {isError ? (
+          <div className="p-8">
+            <UsersError onRetry={() => setQuery((q) => ({ ...q }))} title="users" />
+          </div>
+        ) : isLoading ? (
+          <div className="p-6">
+            {viewMode === "list" ? (
+              <UsersTableSkeleton rows={query.limit} />
+            ) : (
+              <UsersGridSkeleton count={query.limit} />
+            )}
+          </div>
+        ) : filteredAndSortedUsers.length === 0 ? (
+          <div className="p-8">
+            <UsersEmpty message="No users found for your filters." />
+          </div>
+        ) : viewMode === "list" ? (
+          <UsersTable
+            users={filteredAndSortedUsers}
+            onDelete={handleDeleteUser}
+            user={user}
+            refetch={refetch}
+            isRefetching={isRefetching}
+          />
         ) : (
-          <UsersGridSkeleton count={query.limit} />
-        )
-      ) : filteredAndSortedUsers.length === 0 ? (
-        <UsersEmpty message="No users found for your filters." />
-      ) : viewMode === "list" ? (
-        <UsersTable
-          users={filteredAndSortedUsers}
-          onDelete={handleDeleteUser}
-          user={user}
-          refetch={refetch}
-          isRefetching={isRefetching}
-        />
-      ) : (
-        <UsersGrid
-          users={filteredAndSortedUsers}
-          onDelete={handleDeleteUser}
-          user={user}
-          refetch={refetch}
-          isRefetching={isRefetching}
-        />
-      )}
+          <div className="p-6">
+            <UsersGrid
+              users={filteredAndSortedUsers}
+              onDelete={handleDeleteUser}
+              user={user}
+              refetch={refetch}
+              isRefetching={isRefetching}
+            />
+          </div>
+        )}
+      </div>
 
-
-
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="w-full bg-white/90 backdrop-blur-sm border-t border-slate-200 py-4 mt-4 sticky bottom-0">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-slate-600">
-                {isLoading
-                  ? "Loading..."
-                  : `Page ${currentPage + 1} of ${totalPages} • ${totalUsers} users total`}
-              </div>
+        <div className="rounded-2xl border border-border bg-card px-6 py-3.5 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {isLoading
+                ? "Loading..."
+                : `Showing page ${currentPage + 1} of ${totalPages} · ${totalUsers} total users`}
+            </p>
 
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <div className={isFirstPage || isDisabled ? "pointer-events-none opacity-50" : ""}>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handlePageChange(currentPage - 1);
-                        }}
-                      />
-                    </div>
+            <Pagination>
+              <PaginationContent className="gap-1">
+                <PaginationItem>
+                  <div className={cn(isFirstPage || isDisabled ? "pointer-events-none opacity-35" : "")}>
+                    <PaginationPrevious
+                      href="#"
+                      className="h-8 rounded-xl text-xs border-border hover:bg-muted"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(currentPage - 1); }}
+                    />
+                  </div>
+                </PaginationItem>
+
+                {getVisiblePages().map((pageNum) => (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href="#"
+                      className={cn(
+                        "h-8 w-8 rounded-xl text-xs font-medium transition-all",
+                        currentPage === pageNum
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "border-border hover:bg-muted text-muted-foreground"
+                      )}
+                      onClick={(e) => { e.preventDefault(); handlePageChange(pageNum); }}
+                    >
+                      {pageNum + 1}
+                    </PaginationLink>
                   </PaginationItem>
+                ))}
 
-                  {getVisiblePages().map((pageNum) => (
-                    <PaginationItem key={pageNum}>
-                      <PaginationLink
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handlePageChange(pageNum);
-                        }}
-                        className={
-                          currentPage === pageNum
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "border-slate-200 hover:bg-slate-100"
-                        }
-                      >
-                        {pageNum + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-
-                  <PaginationItem>
-                    <div className={isLastPage || isLoading ? "pointer-events-none opacity-50" : ""}>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handlePageChange(currentPage + 1);
-                        }}
-                      />
-                    </div>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+                <PaginationItem>
+                  <div className={cn(isLastPage || isLoading ? "pointer-events-none opacity-35" : "")}>
+                    <PaginationNext
+                      href="#"
+                      className="h-8 rounded-xl text-xs border-border hover:bg-muted"
+                      onClick={(e) => { e.preventDefault(); handlePageChange(currentPage + 1); }}
+                    />
+                  </div>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+
+
+

@@ -6,16 +6,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Package, Plus, Edit, Trash2, SaveAll, AlertCircle } from "lucide-react";
 import { AddRawMaterials, addRawMaterialsSchema } from "@/utils/schema/raw-material.schema";
 import { toast } from "sonner";
 import { useCreateRawMaterials } from "@/utils/hooks/tanstack-query/mutate-hook/raw-materials/use-create-raw-materials";
 import { useQueryClient } from "@tanstack/react-query";
-
-
 
 const RawMaterialsForm = () => {
   const [tempMaterials, setTempMaterials] = useState<AddRawMaterials[]>([]);
@@ -24,38 +27,29 @@ const RawMaterialsForm = () => {
 
   const form = useForm<AddRawMaterials>({
     resolver: zodResolver(addRawMaterialsSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      quantity: 0,
-      unit: "pcs",
-    },
+    defaultValues: { name: "", price: 0, quantity: 0, unit: "pcs" },
     mode: "onChange",
   });
 
-  const { handleSubmit, reset, formState: { errors, isValid }, setValue, watch, trigger } = form;
+  const {
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+    setValue,
+    watch,
+  } = form;
 
-  // Custom onChange handlers for number fields
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
-    setValue("price", value, { shouldValidate: true });
+    setValue("price", parseFloat(e.target.value) || 0, { shouldValidate: true });
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
-    setValue("quantity", value, { shouldValidate: true });
+    setValue("quantity", parseFloat(e.target.value) || 0, { shouldValidate: true });
   };
 
   const onAddTemp = (data: AddRawMaterials) => {
     setTempMaterials((prev) => [...prev, data]);
-
-    // Reset to default values, not the current form values
-    reset({
-      name: "",
-      price: 0,
-      quantity: 0,
-      unit: "pcs",
-    });
+    reset({ name: "", price: 0, quantity: 0, unit: "pcs" });
   };
 
   const onDeleteTemp = (index: number) => {
@@ -70,263 +64,303 @@ const RawMaterialsForm = () => {
 
   const onSubmitAll = async () => {
     if (tempMaterials.length > 20) {
-      toast.error("maximum 20 materials can be saved at a time")
+      toast.error("Maximum 20 materials can be saved at a time");
       return;
     }
     try {
-      create_raw_materials({
-        materials: tempMaterials
-      }, {
-        onSuccess: (res) => {
-          if (res.message && res.message) {
-            queryClient.invalidateQueries({queryKey : ["get-all-raw-materials"]})
-            toast.success(res.message || "raw materials added successfully")
-            setTempMaterials([]);
-            // Also reset the form
-            reset({
-              name: "",
-              price: 0,
-              quantity: 0,
-              unit: "pcs",
-            });
-
-          }
-        },
-        onError: (err) => {
-          toast.error(err.message || "failed to add raw materials")
+      create_raw_materials(
+        { materials: tempMaterials },
+        {
+          onSuccess: (res) => {
+            if (res.message) {
+              queryClient.invalidateQueries({ queryKey: ["get-all-raw-materials"] });
+              toast.success(res.message || "Raw materials added successfully");
+              setTempMaterials([]);
+              reset({ name: "", price: 0, quantity: 0, unit: "pcs" });
+            }
+          },
+          onError: (err) => {
+            toast.error(err.message || "Failed to add raw materials");
+          },
         }
-      })
-
+      );
     } catch (error) {
       console.error("Error saving materials:", error);
-      alert("Failed to save materials. Please try again.");
     }
   };
 
-  const totalValue = tempMaterials.reduce((sum, mat) => sum + (mat.price * mat.quantity), 0);
+  const totalValue = tempMaterials.reduce(
+    (sum, mat) => sum + mat.price * mat.quantity,
+    0
+  );
 
   return (
-    <div className="space-y-6 p-1">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+      {/* Card Header */}
+      <div className="relative px-6 pt-6 pb-5 border-b border-border">
+        {/* Gold top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+        {/* Corner glow */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[radial-gradient(circle,var(--color-accent)/10%,transparent_70%)] pointer-events-none" />
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/10 dark:bg-amber-500/15">
+              <Package className="w-4 h-4 text-amber-500" />
+            </div>
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-6 w-6" />
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="inline-block w-1 h-4 rounded-full bg-accent" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">
+                  Inventory
+                </span>
+              </div>
+              <h2 className="text-sm font-semibold text-foreground tracking-tight">
                 Add Raw Materials
-              </CardTitle>
-              <CardDescription>
-                Add materials to inventory. Materials are saved temporarily until you submit.
-              </CardDescription>
+              </h2>
             </div>
-            {tempMaterials.length > 0 && (
-              <Badge variant="secondary" className="text-sm">
-                {tempMaterials.length} item{tempMaterials.length !== 1 ? 's' : ''} • Total: Rs{totalValue.toFixed(2)}
-              </Badge>
-            )}
           </div>
-        </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Input Form */}
-          <form onSubmit={handleSubmit(onAddTemp)}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              {/* Name Field */}
-              <div className="space-y-2" >
-                <Label htmlFor="name" className="flex items-center gap-1">
-                  Material Name
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="e.g., Flour, Sugar, Oil"
-                  className={errors.name ? "border-red-500" : ""}
-                  {...form.register("name")}
-                  value={watch("name") || ""}
-                  disabled={isPending}
-                />
-                {errors.name && (
-                  <div className="flex items-center gap-1 text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.name.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Price Field */}
-              <div className="space-y-2">
-                <Label htmlFor="price" className="flex items-center gap-1">
-                  Price per Unit
-                  <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    placeholder="0.00"
-                    className={`pl-8 ${errors.price ? "border-red-500" : ""}`}
-                    value={watch("price") || 0}
-                    onChange={handlePriceChange}
-                     disabled={isPending}
-                  />
-                </div>
-                {errors.price && (
-                  <div className="flex items-center gap-1 text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.price.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Quantity Field */}
-              <div className="space-y-2">
-                <Label htmlFor="quantity" className="flex items-center gap-1">
-                  Quantity
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  placeholder="1"
-                  step="0.01"
-                  min="1"
-                  className={errors.quantity ? "border-red-500" : ""}
-                  value={watch("quantity") || 0}
-                   disabled={isPending}
-                  onChange={handleQuantityChange}
-                />
-                {errors.quantity && (
-                  <div className="flex items-center gap-1 text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.quantity.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Unit Field */}
-              <div className="space-y-2">
-                <Label htmlFor="unit" className="flex items-center gap-1">
-                  Unit
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="unit"
-                  type="text"
-                  placeholder="e.g., kg, liters, pcs"
-                  className={errors.unit ? "border-red-500" : ""}
-                  {...form.register("unit")}
-                  value={watch("unit")}
-                   disabled={isPending}
-                />
-                {errors.unit && (
-                  <div className="flex items-center gap-1 text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.unit.message}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full md:w-auto "
-              disabled={!isValid || isPending}
-
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Material
-            </Button>
-          </form>
-
-          {/* Temp Materials Table */}
           {tempMaterials.length > 0 && (
-            <div className="space-y-4">
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-50">Material Name</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tempMaterials.map((mat, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{mat.name}</TableCell>
-                        <TableCell>Rs{mat.price.toFixed(2)}</TableCell>
-                        <TableCell>{mat.quantity}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{mat.unit}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          Rs{(mat.price * mat.quantity).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onEditTemp(idx)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => onDeleteTemp(idx)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Summary and Submit */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Total Materials</p>
-                  <p className="text-2xl font-bold">{tempMaterials.length}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Total Value</p>
-                  <p className="text-2xl font-bold text-green-600">Rs{totalValue.toFixed(2)}</p>
-                </div>
-                <Button
-                  onClick={onSubmitAll}
-                  disabled={isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isPending ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <SaveAll className="h-4 w-4 mr-2" />
-                      Save All Materials
-                    </>
-                  )}
-                </Button>
-              </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border border-border">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span className="text-[11px] font-medium text-foreground">
+                {tempMaterials.length} item{tempMaterials.length !== 1 ? "s" : ""} •{" "}
+                <span className="text-amber-500">Rs {totalValue.toFixed(2)}</span>
+              </span>
             </div>
           )}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 ml-12">
+          Add materials to inventory. Materials are saved temporarily until you submit.
+        </p>
+      </div>
 
+      {/* Form Body */}
+      <div className="px-6 py-5 space-y-6">
+        <form onSubmit={handleSubmit(onAddTemp)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                Material Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="text"
+                placeholder="e.g., Flour, Sugar, Oil"
+                className={`h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border ${errors.name ? "border-destructive" : ""}`}
+                {...form.register("name")}
+                value={watch("name") || ""}
+                disabled={isPending}
+              />
+              {errors.name && (
+                <div className="flex items-center gap-1 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.name.message}
+                </div>
+              )}
+            </div>
 
-        </CardContent>
-      </Card>
+            {/* Price */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                Price per Unit <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                  Rs
+                </span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  placeholder="0.00"
+                  className={`h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border pl-8 ${errors.price ? "border-destructive" : ""}`}
+                  value={watch("price") || 0}
+                  onChange={handlePriceChange}
+                  disabled={isPending}
+                />
+              </div>
+              {errors.price && (
+                <div className="flex items-center gap-1 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.price.message}
+                </div>
+              )}
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                Quantity <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="number"
+                placeholder="1"
+                step="0.01"
+                min="1"
+                className={`h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border ${errors.quantity ? "border-destructive" : ""}`}
+                value={watch("quantity") || 0}
+                onChange={handleQuantityChange}
+                disabled={isPending}
+              />
+              {errors.quantity && (
+                <div className="flex items-center gap-1 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.quantity.message}
+                </div>
+              )}
+            </div>
+
+            {/* Unit */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                Unit <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="text"
+                placeholder="e.g., kg, liters, pcs"
+                className={`h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border ${errors.unit ? "border-destructive" : ""}`}
+                {...form.register("unit")}
+                value={watch("unit")}
+                disabled={isPending}
+              />
+              {errors.unit && (
+                <div className="flex items-center gap-1 text-[11px] text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.unit.message}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={!isValid || isPending}
+            className="rounded-xl h-9 text-sm"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Add to List
+          </Button>
+        </form>
+
+        {/* Temp Materials Table */}
+        {tempMaterials.length > 0 && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border hover:bg-transparent">
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Material Name
+                    </TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Price
+                    </TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Quantity
+                    </TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Unit
+                    </TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground text-right">
+                      Total
+                    </TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground text-right">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tempMaterials.map((mat, idx) => (
+                    <TableRow
+                      key={idx}
+                      className="hover:bg-muted/20 transition-colors border-b border-border last:border-0"
+                    >
+                      <TableCell className="font-medium text-sm text-foreground">
+                        {mat.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        Rs {mat.price.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {mat.quantity}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-muted/60 border border-border text-[11px] font-medium text-foreground">
+                          {mat.unit}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-foreground">
+                        Rs {(mat.price * mat.quantity).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onEditTemp(idx)}
+                            className="h-7 w-7 rounded-lg hover:bg-muted transition-colors"
+                          >
+                            <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onDeleteTemp(idx)}
+                            className="h-7 w-7 rounded-lg hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Summary + Submit */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 rounded-2xl border border-border bg-muted/30">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5">
+                    Total Items
+                  </p>
+                  <p className="text-xl font-bold text-foreground">{tempMaterials.length}</p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5">
+                    Total Value
+                  </p>
+                  <p className="text-xl font-bold text-amber-500">
+                    Rs {totalValue.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={onSubmitAll}
+                disabled={isPending}
+                className="rounded-xl h-9 text-sm min-w-[160px]"
+              >
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  <>
+                    <SaveAll className="h-3.5 w-3.5 mr-1.5" />
+                    Save All Materials
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
