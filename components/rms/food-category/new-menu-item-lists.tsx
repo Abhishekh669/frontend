@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { MenuItemsResponse, MenuItem, UpdateMenuItemType } from "@/utils/types/food-category.types"
 import { MenuItemDeleteDialog } from "./delete-dialog-box"
 import { EditMenuItemDialog } from "./edit-dialog"
@@ -10,9 +10,8 @@ import { useQueryClient } from "@tanstack/react-query"
 import { removeMultipleImages } from "@/utils/actions/uploadthing/delete-images"
 import { useUploadThing } from "@/utils/uploadthing/uploadthing-client"
 import { toast } from "sonner"
-import { Loader2, Trash2 } from "lucide-react"
+import { Trash2, Pencil, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 
 type Props = {
@@ -26,42 +25,26 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
 
   const [selected, setSelected] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
-
-  // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemsToDelete, setItemsToDelete] = useState<MenuItem[]>([])
-
-  // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [itemToEdit, setItemToEdit] = useState<MenuItem | null>(null)
 
   const { mutate: update_menu_item, isPending: updating_menu_item } = useUpdateMenuItems()
   const { mutate: delete_menu_items, isPending: deleting_menu_items } = useDeleteMenuItems()
-
   const isSaving = uploadingImage || updating_menu_item
 
-  // ── Selection ──────────────────────────────────────────────────────────────
-
   const toggleSelect = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    )
+    setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
   }
 
   const selectAll = () => {
-    if (selected.length === menuItems.length) {
-      setSelected([])
-    } else {
-      setSelected(menuItems.map((item) => item.id))
-    }
+    if (selected.length === menuItems.length) setSelected([])
+    else setSelected(menuItems.map((item) => item.id))
   }
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
-
   const openBulkDeleteDialog = () => {
-    const selectedItems = menuItems
-      .filter((item) => selected.includes(item.id))
-      .map((item) => item as unknown as MenuItem)
+    const selectedItems = menuItems.filter((item) => selected.includes(item.id)).map((item) => item as unknown as MenuItem)
     setItemsToDelete(selectedItems)
     setDeleteDialogOpen(true)
   }
@@ -73,9 +56,7 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
 
   const confirmDelete = async () => {
     if (itemsToDelete.length === 0 || deleting_menu_items) return
-
     const ids = itemsToDelete.map((i) => i.id)
-
     delete_menu_items(ids, {
       onSuccess: (res) => {
         if (res.message && res.success) {
@@ -87,13 +68,10 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
         }
       },
       onError: (error) => {
-        console.error("Failed to delete menu items:", error)
         toast.error(error.message || "Failed to delete menu items")
       }
     })
   }
-
-  // ── Edit / Update ──────────────────────────────────────────────────────────
 
   const openEditDialog = (item: MenuItemsResponse) => {
     setItemToEdit(item as unknown as MenuItem)
@@ -103,32 +81,19 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
   const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
     try {
       setUploadingImage(true)
-
       let updatedImage: string | null = data.image_url || null
-
-      // User removed the existing image
       if (!imageFile && !data.image_url && itemToEdit?.image_url) {
         await removeMultipleImages([itemToEdit.image_url])
         updatedImage = null
       }
-
-      // New image file provided — upload it
       if (imageFile) {
         const uploadResults = await startUpload([imageFile])
-        if (uploadResults && uploadResults.length > 0) {
+        if (uploadResults?.length) {
           updatedImage = uploadResults[0].ufsUrl
-
-          // Delete old image if it existed and is different
-          if (data.image_url && data.image_url !== updatedImage) {
-            await removeMultipleImages([data.image_url])
-          }
-        } else {
-          throw new Error("Failed to upload image")
-        }
+          if (data.image_url && data.image_url !== updatedImage) await removeMultipleImages([data.image_url])
+        } else throw new Error("Failed to upload image")
       }
-
       const updatedData: UpdateMenuItemType = { ...data, image_url: updatedImage }
-
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.message && res.success) {
@@ -140,143 +105,166 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
           setUploadingImage(false)
         },
         onError: (error) => {
-          console.error("Failed to update menu item:", error)
           toast.error(error.message || "Failed to update menu item")
           setUploadingImage(false)
         }
       })
     } catch (error) {
-      console.error("Failed to update menu item:", error)
       toast.error("Failed to upload image or update menu item")
       setUploadingImage(false)
       throw error
     }
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const allChecked = menuItems.length > 0 && selected.length === menuItems.length
+  const someChecked = selected.length > 0 && selected.length < menuItems.length
 
   return (
-    <div className="p-6">
+    <div className="space-y-0">
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">Menu Items</h1>
-          {selected.length > 0 && (
-            <p className="text-sm text-primary font-medium">{selected.length} selected</p>
-          )}
-        </div>
+      {/* ── Table ───────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
 
-        <div className="flex items-center gap-3">
-          {selected.length > 0 && (
-            <>
-              <Badge variant="secondary" className="px-3 py-1">
-                {selected.length} selected
-              </Badge>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={openBulkDeleteDialog}
-                disabled={deleting_menu_items}
-                className="gap-2"
-              >
-                {deleting_menu_items ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                Delete Selected
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">
+              {/* Select-all checkbox — leftmost column in header */}
+              <th className="px-4 py-3 w-10">
                 <input
                   type="checkbox"
+                  className="w-4 h-4 rounded accent-primary cursor-pointer"
+                  checked={allChecked}
+                  ref={(el) => { if (el) el.indeterminate = someChecked }}
                   onChange={selectAll}
-                  checked={menuItems.length > 0 && selected.length === menuItems.length}
                   disabled={deleting_menu_items || isSaving}
+                  title="Select all"
                 />
               </th>
-              <th className="p-3 text-left">Image</th>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-left">Price</th>
-              <th className="p-3 text-left">Available</th>
-              <th className="p-3 text-left">Actions</th>
+
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Image</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Name</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Category</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Price</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</th>
+
+              {/* Actions column — shows bulk delete when items selected */}
+              <th className="px-4 py-3 text-right">
+                {selected.length > 0 ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={openBulkDeleteDialog}
+                    disabled={deleting_menu_items}
+                    className="rounded-xl h-7 text-xs gap-1.5"
+                  >
+                    {deleting_menu_items ? (
+                      <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                    Delete ({selected.length})
+                  </Button>
+                ) : (
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    Actions
+                  </span>
+                )}
+              </th>
             </tr>
           </thead>
 
-          <tbody>
-            {menuItems?.map((item) => (
-              <tr
-                key={item.id}
-                className={`border-t ${deleting_menu_items || isSaving ? "opacity-60 pointer-events-none" : ""}`}
-              >
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(item.id)}
-                    onChange={() => toggleSelect(item.id)}
-                  />
-                </td>
-
-                <td className="p-3">
-                  {item.image_url ? (
-                    <div className="relative w-12 h-12">
-                      <Image
-                        src={item.image_url}
-                        alt={item.name || "image"}
-                        fill
-                        className="object-cover rounded"
-                        sizes="48px"
-                      />
+          <tbody className="divide-y divide-border">
+            {menuItems.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-14 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center">
+                      <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
                     </div>
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-200 rounded" />
-                  )}
-                </td>
-
-                <td className="p-3 font-medium">{item.name}</td>
-                <td className="p-3">{item.category_name}</td>
-                <td className="p-3">Rs {item.price}</td>
-
-                <td className="p-3">
-                  {item.is_available ? (
-                    <span className="text-green-600 font-medium">Available</span>
-                  ) : (
-                    <span className="text-red-500 font-medium">Not Available</span>
-                  )}
-                </td>
-
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => openEditDialog(item)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={() => openSingleDeleteDialog(item)}
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+                    <p className="text-sm text-muted-foreground">No menu items found</p>
+                  </div>
                 </td>
               </tr>
-            ))}
+            ) : (
+              menuItems.map((item) => (
+                <tr
+                  key={item.id}
+                  className={`hover:bg-muted/20 transition-colors ${
+                    selected.includes(item.id) ? 'bg-accent/5' : ''
+                  } ${deleting_menu_items || isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      checked={selected.includes(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                    />
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {item.image_url ? (
+                      <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
+                        <Image src={item.image_url} alt={item.name || "image"} fill className="object-cover" sizes="40px" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
+                        <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-muted-foreground">{item.category_name}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">Rs {item.price}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {item.is_available ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Available
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        Unavailable
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditDialog(item)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openSingleDeleteDialog(item)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Delete Dialog */}
       <MenuItemDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -284,8 +272,6 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
         items={itemsToDelete}
         isDeleting={deleting_menu_items}
       />
-
-      {/* Edit Dialog */}
       <EditMenuItemDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}

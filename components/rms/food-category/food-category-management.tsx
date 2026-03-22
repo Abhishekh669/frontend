@@ -4,25 +4,28 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { 
-  ArrowRight, 
-  Utensils, 
-  Plus, 
-  ChefHat, 
-  Sparkles, 
-  Search, 
-  ArrowUpDown,
+import {
+  Utensils,
+  Plus,
+  ChefHat,
+  Sparkles,
+  Search,
   Trash2,
   Edit2,
   X,
   Save,
-  Loader2
+  ChevronDown,
+  ArrowUpDown,
+  ExternalLink,
+  LayoutGrid,
+  CheckCircle2,
+  XCircle,
+  Filter,
 } from "lucide-react"
 import { User } from "@/utils/types/user.types"
 import { Category } from "@/utils/types/food-category.types"
 import { useGetFoodCategories } from "@/utils/hooks/tanstack-query/query-hook/food-category/use-get-all-food-category"
-import {  NewCatType } from "@/utils/actions/food-category/food-category.post"
+import { NewCatType } from "@/utils/actions/food-category/food-category.post"
 import { useCreateFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-create-food-category"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -38,7 +41,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useUpdateFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-update-food-category"
@@ -46,11 +48,10 @@ import { useDeleteFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/
 
 type SortType = "name-asc" | "name-desc" | "date-newest" | "date-oldest" | "active"
 
-// Types for update and delete
 interface UpdateCategoryType {
-  id: string;
-  name: string;
-  is_active: boolean;
+  id: string
+  name: string
+  is_active: boolean
 }
 
 function FoodManagementPage({ user }: { user: User }) {
@@ -62,29 +63,23 @@ function FoodManagementPage({ user }: { user: User }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editFormData, setEditFormData] = useState<UpdateCategoryType | null>(null)
-  
+
   const { data, isLoading, isError } = useGetFoodCategories()
-  console.log("thisis the  food cateogyur : ", data)
   const { mutate: create_food_category, isPending } = useCreateFoodCategory()
-  const { mutate: update_food_category, isPending: updatingFoodCategory } = useUpdateFoodCategory();
+  const { mutate: update_food_category, isPending: updatingFoodCategory } = useUpdateFoodCategory()
   const { mutate: delete_food_category, isPending: deletingFoodCategory } = useDeleteFoodCategory()
   const queryClient = useQueryClient()
 
   const categories: Category[] = useMemo(() => {
     if (isLoading) return []
-    if (data?.categories) {
-      return data.categories
-    }
-    return []
+    return data?.categories || []
   }, [data, isLoading])
 
   const createCategory = async () => {
     if (isPending) return
     try {
-      const data: NewCatType = {
-        category_name: catName,
-      }
-      create_food_category(data, {
+      const payload: NewCatType = { category_name: catName }
+      create_food_category(payload, {
         onSuccess: (res) => {
           if (res.message && res.success) {
             queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
@@ -92,477 +87,538 @@ function FoodManagementPage({ user }: { user: User }) {
             setCatName("")
           }
         },
-        onError: (err) => {
-          toast.error(err.message || "failed to create category")
-        }
+        onError: (err) => toast.error(err.message || "Failed to create category"),
       })
     } catch (error) {
-      toast.error(getErrorMessage(error as string || "failed to create user"))
+      toast.error(getErrorMessage(error as string || "Failed to create category"))
     }
   }
 
-  // Update category handler
   const handleUpdateCategory = async (updateData: UpdateCategoryType) => {
-    try {
-      update_food_category(updateData, {
-        onSuccess: (res) => {
-          if (res.message && res.success) {
-            queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
-            toast.success(res.message || "Category updated successfully")
-            setEditingCategory(null)
-            setEditFormData(null)
-          }
-        },
-        onError: (error) => {
-          toast.error(error.message || 'Failed to update category')
+    update_food_category(updateData, {
+      onSuccess: (res) => {
+        if (res.message && res.success) {
+          queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
+          toast.success(res.message || "Category updated successfully")
+          setEditingCategory(null)
+          setEditFormData(null)
         }
-      })
-    } catch (error) {
-      console.error('Failed to update category:', error)
-      toast.error('Failed to update category')
-    }
-  }
-
-  // Delete categories handler
-  const handleDeleteCategories = async (categoryIds: string[]) => {
-    if (categoryIds.length === 0 || deletingFoodCategory) return
-
-    try {
-      delete_food_category(categoryIds, {
-        onSuccess: (res) => {
-          if (res.message && res.success) {
-            queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
-            toast.success(res.message || `${categoryIds.length} categor${categoryIds.length === 1 ? 'y' : 'ies'} deleted successfully`)
-            setSelectedCategories([])
-            setIsDeleteDialogOpen(false)
-          }
-        },
-        onError: (error) => {
-          console.error('Failed to delete categories:', error)
-          toast.error(error.message || 'Failed to delete categories')
-        }
-      })
-    } catch (error) {
-      console.error('Failed to delete categories:', error)
-      toast.error('Failed to delete categories')
-    }
-  }
-
-  const handleSelectAll = () => {
-    if (selectedCategories.length === filteredAndSortedCategories.length) {
-      setSelectedCategories([])
-    } else {
-      setSelectedCategories(filteredAndSortedCategories.map(cat => cat.id))
-    }
-  }
-
-  const handleSelectCategory = (categoryId: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    )
-  }
-
-  const startEditing = (category: Category) => {
-    setEditingCategory(category.id)
-    setEditFormData({
-      id: category.id,
-      name: category.name,
-      is_active: category.is_active,
+      },
+      onError: (error) => toast.error(error.message || "Failed to update category"),
     })
   }
 
-  const cancelEditing = () => {
-    setEditingCategory(null)
-    setEditFormData(null)
+  const handleDeleteCategories = async (categoryIds: string[]) => {
+    if (categoryIds.length === 0 || deletingFoodCategory) return
+    delete_food_category(categoryIds, {
+      onSuccess: (res) => {
+        if (res.message && res.success) {
+          queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
+          toast.success(res.message || `${categoryIds.length} categor${categoryIds.length === 1 ? "y" : "ies"} deleted`)
+          setSelectedCategories([])
+          setIsDeleteDialogOpen(false)
+        }
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete categories"),
+    })
   }
+
+  const handleSelectAll = () => {
+    if (selectedCategories.length === filteredAndSortedCategories.length)
+      setSelectedCategories([])
+    else setSelectedCategories(filteredAndSortedCategories.map((c) => c.id))
+  }
+
+  const handleSelectCategory = (id: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const startEditing = (cat: Category) => {
+    setEditingCategory(cat.id)
+    setEditFormData({ id: cat.id, name: cat.name, is_active: cat.is_active })
+  }
+
+  const cancelEditing = () => { setEditingCategory(null); setEditFormData(null) }
 
   const handleEditChange = (field: keyof UpdateCategoryType, value: any) => {
     if (!editFormData) return
     setEditFormData({ ...editFormData, [field]: value })
   }
 
-  const handleVisit = (slug: string) => {
-    router.push(`/food-category/${slug}`)
-  }
+  const handleVisit = (slug: string) => router.push(`/food-category/${slug}`)
 
   const filteredAndSortedCategories = useMemo(() => {
-    let filtered = categories.filter((cat: Category) =>
-      cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = categories.filter((c: Category) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
-
     return filtered.sort((a: Category, b: Category) => {
       switch (sortBy) {
-        case "name-asc":
-          return a.name.localeCompare(b.name)
-        case "name-desc":
-          return b.name.localeCompare(a.name)
-        case "date-newest":
-          return (
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
-          )
-        case "date-oldest":
-          return (
-            new Date(a.created_at).getTime() -
-            new Date(b.created_at).getTime()
-          )
-        case "active":
-          return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0)
-        default:
-          return 0
+        case "name-asc": return a.name.localeCompare(b.name)
+        case "name-desc": return b.name.localeCompare(a.name)
+        case "date-newest": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case "date-oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        case "active": return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0)
+        default: return 0
       }
     })
   }, [categories, searchQuery, sortBy])
 
-  // Handle error state
+  const activeCount = categories.filter((c) => c.is_active).length
+  const inactiveCount = categories.filter((c) => !c.is_active).length
+
   if (isError) {
     return (
-      <main className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Utensils className="w-12 h-12 mx-auto text-destructive" />
-          <h2 className="text-2xl font-light">Failed to load categories</h2>
-          <p className="text-muted-foreground">Please try again later</p>
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="relative">
+            <div className="absolute inset-0 scale-110 rounded-3xl border border-destructive/20" />
+            <div className="relative w-16 h-16 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+              <Utensils className="w-7 h-7 text-destructive" />
+            </div>
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">Failed to load categories</h2>
+          <p className="text-sm text-muted-foreground">Please try again later</p>
         </div>
       </main>
     )
   }
 
-  const isUpdating = updatingFoodCategory || deletingFoodCategory;
+  const isUpdating = updatingFoodCategory || deletingFoodCategory
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      {/* Premium Header Section */}
-      <section className="relative overflow-hidden bg-linear-to-b from-background via-background to-transparent pb-12 pt-16">
-        <div className="max-w-7xl mx-auto px-6 space-y-8">
-          {/* Decorative Elements */}
-          <div className="pointer-events-none absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-40 w-60 h-60 bg-accent/5 rounded-full blur-3xl" />
+    <main className="min-h-screen bg-background text-foreground -m-6">
+      <div className="max-w-18xl mx-auto px-6 py-6 space-y-5">
 
-          {/* Header Content */}
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/15 rounded-xl backdrop-blur-sm">
-                <ChefHat className="w-7 h-7 text-primary" strokeWidth={1.5} />
-              </div>
+        {/* ── Hero Header ─────────────────────────────────────────────── */}
+        <div className="relative rounded-2xl border border-border bg-card px-8 py-7 shadow-sm overflow-hidden">
+          {/* Gold radial glow */}
+          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[radial-gradient(circle,oklch(0.75_0.12_85)/12%,transparent_70%)]" />
+          {/* Bottom gold line */}
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
+          <div className="relative z-10">
+            {/* Accent label */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-block w-1 h-5 rounded-full bg-accent" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">
+                Menu Management
+              </span>
+            </div>
+
+            {/* Title row + inline add-category */}
+            <div className="flex items-center justify-between gap-6 flex-wrap">
+              {/* Left: title + description */}
               <div>
-                <h1 className="text-4xl sm:text-5xl font-light tracking-tight text-balance">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Food Categories
                 </h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Organize and manage your culinary collection
+                <p className="text-sm text-muted-foreground mt-1.5">
+                  Manage and organize your restaurant menu structure.
+                </p>
+              </div>
+
+              {/* Right: add-category input + button */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Input
+                  placeholder="New category name…"
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && createCategory()}
+                  className="h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors w-full sm:w-52"
+                  disabled={isUpdating}
+                />
+                <Button
+                  onClick={createCategory}
+                  disabled={catName.trim().length <= 2 || isPending || isUpdating}
+                  className="rounded-xl h-9 gap-2 text-sm shrink-0 cursor-pointer"
+                >
+                  {isPending ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      <span className="hidden sm:inline">Adding…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>+ Add Category</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── KPI Stat Cards ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Total */}
+          <div className="relative rounded-2xl border border-border bg-card px-6 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+            <div className="pointer-events-none absolute -top-6 -right-6 w-28 h-28 rounded-full bg-[radial-gradient(circle,oklch(0.55_0.08_200)/10%,transparent_70%)]" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 shrink-0">
+                <LayoutGrid className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Total Categories</p>
+                <p className="text-3xl font-bold text-foreground leading-none mt-1">
+                  {isLoading ? <span className="w-8 h-7 rounded bg-muted animate-pulse block" /> : categories.length}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Input Section */}
-          <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row gap-3 bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
+          {/* Active */}
+          <div className="relative rounded-2xl border border-border bg-card px-6 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+            <div className="pointer-events-none absolute -top-6 -right-6 w-28 h-28 rounded-full bg-[radial-gradient(circle,oklch(0.6_0.15_150)/10%,transparent_70%)]" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Active</p>
+                <p className="text-3xl font-bold text-foreground leading-none mt-1">
+                  {isLoading ? <span className="w-8 h-7 rounded bg-muted animate-pulse block" /> : activeCount}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Inactive */}
+          <div className="relative rounded-2xl border border-border bg-card px-6 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+            <div className="pointer-events-none absolute -top-6 -right-6 w-28 h-28 rounded-full bg-[radial-gradient(circle,oklch(0.62_0.22_25)/10%,transparent_70%)]" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/10 shrink-0">
+                <XCircle className="w-5 h-5 text-rose-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Inactive</p>
+                <p className="text-3xl font-bold text-foreground leading-none mt-1">
+                  {isLoading ? <span className="w-8 h-7 rounded bg-muted animate-pulse block" /> : inactiveCount}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtered */}
+          <div className="relative rounded-2xl border border-border bg-card px-6 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+            <div className="pointer-events-none absolute -top-6 -right-6 w-28 h-28 rounded-full bg-[radial-gradient(circle,oklch(0.75_0.12_85)/12%,transparent_70%)]" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 shrink-0">
+                <Filter className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Filtered</p>
+                <p className="text-3xl font-bold text-foreground leading-none mt-1">
+                  {isLoading ? <span className="w-8 h-7 rounded bg-muted animate-pulse block" /> : filteredAndSortedCategories.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section row: title + delete button ──────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Your Categories
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {filteredAndSortedCategories.length}
+              </span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {selectedCategories.length > 0 ? (
+                <span className="text-accent font-medium">
+                  {selectedCategories.length} selected
+                </span>
+              ) : (
+                `Showing ${filteredAndSortedCategories.length} of ${categories.length} categories`
+              )}
+            </p>
+          </div>
+          {selectedCategories.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              disabled={deletingFoodCategory || isUpdating}
+              className="rounded-xl h-8 text-xs gap-1.5 cursor-pointer"
+            >
+              {deletingFoodCategory ? (
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              Delete ({selectedCategories.length})
+            </Button>
+          )}
+        </div>
+
+        {/* ── Toolbar: select-all + search + sort ─────────────────────── */}
+        <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-md px-5 py-3.5 shadow-sm sticky top-0 z-30">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {filteredAndSortedCategories.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="select-all"
+                  checked={
+                    selectedCategories.length > 0 &&
+                    selectedCategories.length === filteredAndSortedCategories.length
+                  }
+                  onCheckedChange={handleSelectAll}
+                  disabled={isUpdating}
+                  className="cursor-pointer"
+                />
+                <Label
+                  htmlFor="select-all"
+                  className="text-xs cursor-pointer text-muted-foreground select-none"
+                >
+                  Select All
+                </Label>
+              </div>
+            )}
+
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Enter new category name..."
-                value={catName}
-                onChange={(e) => setCatName(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && createCategory()}
-                className="flex-1 h-11 text-base border-border/50 bg-background/50 rounded-lg"
+                placeholder="Search by category name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors"
                 disabled={isUpdating}
               />
-              <Button
-                onClick={createCategory}
-                disabled={catName.trim().length <= 2 || isPending || isUpdating}
-                className="sm:w-40 h-11 gap-2 font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+            </div>
+
+            <div className="relative">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortType)}
+                className="pl-9 pr-8 h-9 bg-muted/40 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                disabled={isUpdating}
               >
-                {isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" strokeWidth={2} />
-                    Add Category
-                  </>
-                )}
-              </Button>
+                <option value="date-newest">Newest First</option>
+                <option value="date-oldest">Oldest First</option>
+                <option value="name-asc">Name (A–Z)</option>
+                <option value="name-desc">Name (Z–A)</option>
+                <option value="active">Active First</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Categories Section */}
-      <section className="max-w-7xl mx-auto px-6 pb-10">
-        <div className="space-y-6">
-          {/* Header with Selection Controls */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-light tracking-tight">
-                Your Categories
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {selectedCategories.length > 0 ? (
-                  <span className="text-primary font-medium">
-                    {selectedCategories.length} selected
-                  </span>
-                ) : (
-                  `Manage ${filteredAndSortedCategories.length} of ${categories.length} categories`
-                )}
-              </p>
+        {/* ── Categories grid ─────────────────────────────────────────── */}
+        <div className="max-h-[36rem] overflow-y-auto pr-1 scrollbar-hide">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-44 bg-muted/40 rounded-2xl animate-pulse border border-border" />
+              ))}
             </div>
-            <div className="flex items-center gap-3">
-              {selectedCategories.length > 0 && (
-                <>
-                  <Badge variant="secondary" className="px-3 py-1">
-                    {selectedCategories.length} selected
-                  </Badge>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="gap-2"
-                    disabled={deletingFoodCategory || isUpdating}
-                  >
-                    {deletingFoodCategory ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                    Delete Selected
-                  </Button>
-                </>
-              )}
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
-              </div>
-            </div>
-          </div>
-
-          {/* Toolbar (Sticky) */}
-          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Select All Checkbox */}
-              {filteredAndSortedCategories.length > 0 && (
-                <div className="flex items-center gap-2 px-2">
-                  <Checkbox
-                    id="select-all"
-                    checked={selectedCategories.length === filteredAndSortedCategories.length}
-                    onCheckedChange={handleSelectAll}
-                    disabled={isUpdating}
-                  />
-                  <Label htmlFor="select-all" className="text-sm cursor-pointer">
-                    Select All
-                  </Label>
-                </div>
-              )}
-
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by category name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 bg-background/50 border-border/50 rounded-lg"
-                  disabled={isUpdating}
-                />
-              </div>
-
-              {/* Sort */}
-              <div className="relative">
-                <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortType)}
-                  className="pl-10 pr-4 h-10 bg-background/50 border border-border/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  disabled={isUpdating}
+          ) : filteredAndSortedCategories.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredAndSortedCategories.map((cat: Category) => (
+                <div
+                  key={cat.id}
+                  className={`relative rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200 group ${
+                    editingCategory === cat.id
+                      ? "border-accent/60 ring-1 ring-accent/40 shadow-md"
+                      : selectedCategories.includes(cat.id)
+                      ? "border-accent/50 ring-1 ring-accent/30 bg-accent/5"
+                      : "border-border hover:shadow-md hover:-translate-y-0.5 hover:border-border/80"
+                  } ${isUpdating ? "opacity-60 pointer-events-none" : ""}`}
                 >
-                  <option value="date-newest">Newest First</option>
-                  <option value="date-oldest">Oldest First</option>
-                  <option value="name-asc">Name (A-Z)</option>
-                  <option value="name-desc">Name (Z-A)</option>
-                  <option value="active">Active First</option>
-                </select>
-              </div>
-            </div>
-          </div>
+                  {/* Top hover accent line */}
+                  <div
+                    className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/50 to-transparent transition-opacity ${
+                      editingCategory === cat.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  />
 
-          {/* Scrollable Categories Area */}
-          <div className="max-h-96 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/40 [&::-webkit-scrollbar-thumb]:rounded-lg">
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-64 bg-muted/40 rounded-2xl animate-pulse" />
-                ))}
-              </div>
-            ) : filteredAndSortedCategories.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {filteredAndSortedCategories.map((cat: Category) => (
-                  <Card
-                    key={cat.id}
-                    className={`border border-border/50 bg-card/40 transition-all duration-300 rounded-2xl group ${
-                      editingCategory === cat.id ? 'ring-2 ring-primary' : ''
-                    } ${isUpdating ? 'opacity-60 pointer-events-none' : ''}`}
-                  >
-                    <CardContent className="p-5 flex flex-col h-full">
-                      {editingCategory === cat.id ? (
-                        // Edit Mode
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-start">
-                            <Input
-                              value={editFormData?.name || ''}
-                              onChange={(e) => handleEditChange('name', e.target.value)}
-                              className="text-base font-medium"
-                              placeholder="Category name"
-                              autoFocus
+                  <div className="p-5 flex flex-col gap-3">
+
+                    {/* ── EDIT MODE ──────────────────────────────────── */}
+                    {editingCategory === cat.id ? (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
+                            Editing
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleUpdateCategory(editFormData!)}
                               disabled={updatingFoodCategory}
-                            />
-                            <div className="flex gap-1 ml-2">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleUpdateCategory(editFormData!)}
-                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
-                                disabled={updatingFoodCategory}
-                              >
-                                {updatingFoodCategory ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Save className="w-4 h-4" />
-                                )}
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={cancelEditing}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={updatingFoodCategory}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                id={`active-${cat.id}`}
-                                checked={editFormData?.is_active}
-                                onCheckedChange={(checked) => handleEditChange('is_active', checked)}
-                                disabled={updatingFoodCategory}
-                              />
-                              <Label htmlFor={`active-${cat.id}`} className="text-xs">
-                                Active
-                              </Label>
-                            </div>
+                              title="Save"
+                              className="h-7 w-7 rounded-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              {updatingFoodCategory ? (
+                                <span className="w-3 h-3 border-2 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin" />
+                              ) : (
+                                <Save className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              disabled={updatingFoodCategory}
+                              title="Cancel"
+                              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      ) : (
-                        // View Mode
-                        <>
-                          <div className="flex-1 space-y-3">
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-start gap-2">
-                                <Checkbox
-                                  checked={selectedCategories.includes(cat.id)}
-                                  onCheckedChange={() => handleSelectCategory(cat.id)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="mt-1"
-                                  disabled={isUpdating}
-                                />
-                                <h3 className="text-lg font-light group-hover:text-primary transition-colors">
-                                  {cat.name}
-                                </h3>
-                              </div>
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  cat.is_active
-                                    ? "bg-primary/15 text-primary"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {cat.is_active ? "Active" : "Inactive"}
-                              </span>
+                        <Input
+                          value={editFormData?.name || ""}
+                          onChange={(e) => handleEditChange("name", e.target.value)}
+                          className="h-8 text-sm bg-background border-border rounded-xl"
+                          placeholder="Category name"
+                          autoFocus
+                          disabled={updatingFoodCategory}
+                        />
+                        <div className="flex items-center justify-between rounded-xl bg-muted/40 border border-border px-3 py-2">
+                          <span className="text-xs text-muted-foreground">Active</span>
+                          <Switch
+                            id={`active-${cat.id}`}
+                            checked={editFormData?.is_active ?? true}
+                            onCheckedChange={(checked) => handleEditChange("is_active", checked)}
+                            disabled={updatingFoodCategory}
+                          />
+                        </div>
+                      </div>
+
+                    ) : (
+                      /* ── VIEW MODE ─────────────────────────────────── */
+                      <>
+                        <div className="flex-1 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2.5">
+                              <Checkbox
+                                checked={selectedCategories.includes(cat.id)}
+                                onCheckedChange={() => handleSelectCategory(cat.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-0.5 cursor-pointer"
+                                disabled={isUpdating}
+                              />
+                              <h3 className="text-base font-semibold text-foreground leading-snug group-hover:text-accent transition-colors line-clamp-2">
+                                {cat.name}
+                              </h3>
                             </div>
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
+                                cat.is_active
+                                  ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                  : "bg-muted text-muted-foreground border border-border"
+                              }`}
+                            >
+                              <span
+                                className={`w-1 h-1 rounded-full ${
+                                  cat.is_active ? "bg-emerald-500" : "bg-muted-foreground/60"
+                                }`}
+                              />
+                              {cat.is_active ? "Active" : "Off"}
+                            </span>
+                          </div>
 
-                            <p className="text-xs font-mono bg-muted/40 px-2 py-1 rounded-lg w-fit">
-                              /{cat.slug}
+                          <p className="text-xs font-mono bg-muted/50 border border-border px-2.5 py-1 rounded-lg text-muted-foreground w-fit max-w-full truncate">
+                            /{cat.slug}
+                          </p>
+
+                          {cat.display_order !== undefined && (
+                            <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/40" />
+                              {cat.display_order}
                             </p>
-                            
-                            {cat.display_order !== undefined && (
-                              <p className="text-xs text-muted-foreground">
-                                Display Order: {cat.display_order}
-                              </p>
-                            )}
-                          </div>
+                          )}
+                        </div>
 
-                          <div className="mt-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                startEditing(cat)
-                              }}
-                              className="flex-1 gap-2 rounded-lg"
-                              disabled={isUpdating}
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleVisit(cat.slug)}
-                              className="flex-1 gap-2 rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                              disabled={isUpdating}
-                            >
-                              Visit
-                              <ArrowRight className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEditing(cat) }}
+                            disabled={isUpdating}
+                            title="Edit category"
+                            className="h-9 w-9 rounded-xl flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:border-border/80 transition-all cursor-pointer disabled:opacity-40 shrink-0"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleVisit(cat.slug)}
+                            disabled={isUpdating}
+                            className="flex-1 h-9 rounded-xl flex items-center justify-center gap-1.5 text-sm font-medium border border-border text-muted-foreground bg-muted/20 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 cursor-pointer disabled:opacity-40 group/visit"
+                          >
+                            <span>Open</span>
+                            {/* <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover/visit:opacity-100 transition-opacity" /> */}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-border bg-card shadow-sm p-16 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 scale-110 rounded-3xl border border-border/40" />
+                  <div className="relative w-14 h-14 rounded-3xl bg-muted/60 border border-border flex items-center justify-center">
+                    <Utensils className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                </div>
+                <h3 className="text-sm font-semibold text-foreground">No categories found</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+                  {searchQuery
+                    ? "No categories match your search."
+                    : "Use the field above to create your first category."}
+                </p>
               </div>
-            ) : (
-              <Card className="border border-border/50 bg-card/40 rounded-2xl">
-                <CardContent className="p-16 text-center">
-                  <Utensils className="w-8 h-8 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "No categories match your search." : "No categories found. Create your first one!"}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </section>
 
-      {/* Delete Confirmation Dialog */}
+      </div>
+
+      {/* ── Delete Confirmation Dialog ───────────────────────────────── */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Categories</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedCategories.length} selected categor{selectedCategories.length === 1 ? 'y' : 'ies'}? 
-              This action cannot be undone.
-            </AlertDialogDescription>
+        <AlertDialogContent className="rounded-3xl border border-border bg-card p-0 shadow-xl overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+          <AlertDialogHeader className="relative px-6 pt-6 pb-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-base font-semibold text-foreground tracking-tight">
+                  Delete Categories
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Delete {selectedCategories.length} selected categor
+                  {selectedCategories.length === 1 ? "y" : "ies"}? This cannot be undone.
+                </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingFoodCategory}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="px-6 pb-6 pt-4 border-t border-border flex justify-end gap-2">
+            <AlertDialogCancel
+              disabled={deletingFoodCategory}
+              className="rounded-xl h-9 text-sm border-border bg-muted/30 hover:bg-muted/60 cursor-pointer"
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleDeleteCategories(selectedCategories)}
-              className="bg-destructive hover:bg-destructive/90"
               disabled={deletingFoodCategory}
+              className="rounded-xl h-9 text-sm bg-destructive hover:bg-destructive/90 text-white min-w-24 gap-2 cursor-pointer"
             >
               {deletingFoodCategory ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Deleting...
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Deleting…
                 </>
               ) : (
-                'Delete'
+                "Delete"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

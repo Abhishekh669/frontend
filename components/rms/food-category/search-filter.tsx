@@ -14,13 +14,13 @@ export const SearchFilter = memo(function SearchFilter({
   searchTerm
 }: SearchFilterProps) {
   return (
-    <div className="relative max-w-md">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="relative max-w-md flex-1">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
       <Input
         placeholder="Search categories and menu items..."
         value={searchTerm}
         onChange={(e) => onSearch(e.target.value)}
-        className="pl-10 w-full"
+        className="pl-9 h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors w-full"
       />
     </div>
   )

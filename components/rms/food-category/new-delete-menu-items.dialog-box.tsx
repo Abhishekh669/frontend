@@ -4,6 +4,7 @@ import { useState } from "react"
 import { MenuItemsResponse, MenuItem, UpdateMenuItemType } from "@/utils/types/food-category.types"
 import { MenuItemDeleteDialog } from "./delete-dialog-box"
 import { EditMenuItemDialog } from "./edit-dialog"
+import { Trash2, Pencil, UtensilsCrossed } from "lucide-react"
 import Image from "next/image"
 
 type Props = {
@@ -30,14 +31,10 @@ function NewMenuItemsPage({ menuItems }: Props) {
   }
 
   const selectAll = () => {
-    if (selected.length === menuItems.length) {
-      setSelected([])
-    } else {
-      setSelected(menuItems.map((item) => item.id))
-    }
+    if (selected.length === menuItems.length) setSelected([])
+    else setSelected(menuItems.map((item) => item.id))
   }
 
-  // Bulk delete — opens dialog with all selected items
   const openBulkDeleteDialog = () => {
     const selectedItems = menuItems
       .filter((item) => selected.includes(item.id))
@@ -46,7 +43,6 @@ function NewMenuItemsPage({ menuItems }: Props) {
     setDeleteDialogOpen(true)
   }
 
-  // Single delete — opens dialog with just that item
   const openSingleDeleteDialog = (item: MenuItemsResponse) => {
     setItemsToDelete([item as unknown as MenuItem])
     setDeleteDialogOpen(true)
@@ -85,102 +81,153 @@ function NewMenuItemsPage({ menuItems }: Props) {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded accent-primary cursor-pointer"
+                onChange={selectAll}
+                checked={menuItems.length > 0 && selected.length === menuItems.length}
+              />
+              <span className="text-xs text-muted-foreground">Select all</span>
+            </label>
+            {selected.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                {selected.length} selected
+              </span>
+            )}
+          </div>
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">Menu Items</h1>
-
-        <button
-          onClick={openBulkDeleteDialog}
-          disabled={selected.length === 0}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Delete Selected {selected.length > 0 && `(${selected.length})`}
-        </button>
+          {selected.length > 0 && (
+            <button
+              onClick={openBulkDeleteDialog}
+              disabled={selected.length === 0}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium bg-destructive text-white hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Selected ({selected.length})
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">
-                <input
-                  type="checkbox"
-                  onChange={selectAll}
-                  checked={menuItems.length > 0 && selected.length === menuItems.length}
-                />
+      <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
+              <th className="px-4 py-3 w-10">
+                <span className="sr-only">Select</span>
               </th>
-              <th className="p-3 text-left">Image</th>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-left">Price</th>
-              <th className="p-3 text-left">Available</th>
-              <th className="p-3 text-left">Actions</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Image</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Name</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Category</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Price</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground text-right">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
-            {menuItems?.map((item) => (
-              <tr key={item.id} className="border-t">
-
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(item.id)}
-                    onChange={() => toggleSelect(item.id)}
-                  />
+          <tbody className="divide-y divide-border">
+            {menuItems.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center">
+                      <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No menu items found</p>
+                  </div>
                 </td>
-
-                <td className="p-3">
-  {item.image_url ? (
-    <div className="relative w-12 h-12">
-      <Image
-        src={item.image_url}
-        alt={item.name || "image"}
-        fill
-        className="object-cover rounded"
-        sizes="48px"
-      />
-    </div>
-  ) : (
-    <div className="w-12 h-12 bg-gray-200 rounded" />
-  )}
-</td>
-
-                <td className="p-3 font-medium">{item.name}</td>
-                <td className="p-3">{item.category_name}</td>
-                <td className="p-3">Rs {item.price}</td>
-
-                <td className="p-3">
-                  {item.is_available ? (
-                    <span className="text-green-600 font-medium">Available</span>
-                  ) : (
-                    <span className="text-red-500 font-medium">Not Available</span>
-                  )}
-                </td>
-
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => openEditDialog(item)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={() => openSingleDeleteDialog(item)}
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </td>
-
               </tr>
-            ))}
-          </tbody>
+            ) : (
+              menuItems.map((item) => (
+                <tr
+                  key={item.id}
+                  className={`hover:bg-muted/20 transition-colors ${
+                    selected.includes(item.id) ? 'bg-accent/5' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      checked={selected.includes(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                    />
+                  </td>
 
+                  <td className="px-4 py-3">
+                    {item.image_url ? (
+                      <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
+                        <Image
+                          src={item.image_url}
+                          alt={item.name || "image"}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
+                        <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-muted-foreground">{item.category_name}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">Rs {item.price}</span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {item.is_available ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Available
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        Unavailable
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditDialog(item)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openSingleDeleteDialog(item)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
         </table>
       </div>
 
@@ -201,7 +248,6 @@ function NewMenuItemsPage({ menuItems }: Props) {
         item={itemToEdit}
         isSaving={isSaving}
       />
-
     </div>
   )
 }

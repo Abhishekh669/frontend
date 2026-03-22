@@ -24,16 +24,23 @@ export const EmptyState = memo(function EmptyState({
       : 'This category doesn\'t have any menu items yet.'
 
   return (
-    <div className="text-center py-12 col-span-full">
-      <div className="flex justify-center mb-4">
-        <div className="p-4 bg-muted rounded-full">
-          <Icon className="h-8 w-8 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-16 col-span-full text-center">
+      {/* Outer decorative ring */}
+      <div className="relative mb-6">
+        <div className="absolute inset-0 scale-110 rounded-3xl border border-border/40" />
+        <div className="relative w-16 h-16 rounded-3xl bg-muted/60 border border-border flex items-center justify-center">
+          <Icon className="h-7 w-7 text-muted-foreground" />
         </div>
       </div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground">{message}</p>
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">{message}</p>
       {searchTerm && onClear && (
-        <Button variant="link" onClick={onClear} className="mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          className="mt-4 rounded-xl text-accent hover:text-accent hover:bg-accent/10 text-xs"
+        >
           Clear search
         </Button>
       )}

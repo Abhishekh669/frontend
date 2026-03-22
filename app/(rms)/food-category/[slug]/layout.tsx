@@ -14,9 +14,8 @@ export default async function Layout({ children, params }: LayoutProps) {
 
   return (
     <Suspense fallback={<div>Loading category...</div>}>
-      <div className="space-y-6 p-6">
-        <CategoryHeaderWithSlug slugs={slug} />
-        
+      <div className="space-y-6 p-1">
+          
         {/* This shows on ALL slug routes */}
        
 

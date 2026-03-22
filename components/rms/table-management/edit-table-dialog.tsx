@@ -28,35 +28,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import { TableType } from "@/utils/types/table.types";
 import { useUpdateTable } from "@/utils/hooks/tanstack-query/mutate-hook/table/use-update-table";
 import { useQueryClient } from "@tanstack/react-query";
 
-// Schema for form with string values
 const formSchema = z.object({
-  table_number: z.string()
+  table_number: z
+    .string()
     .min(1, "Table number is required")
-    .refine((val) => /^\d+$/.test(val), {
-      message: "Table number must contain only numbers",
-    })
-    .refine((val) => {
-      const num = parseInt(val);
-      return num >= 1 && num <= 999;
-    }, {
-      message: "Table number must be between 1 and 999",
+    .refine((val) => /^\d+$/.test(val), { message: "Numbers only" })
+    .refine((val) => parseInt(val) >= 1 && parseInt(val) <= 999, {
+      message: "Must be between 1–999",
     }),
-  capacity: z.string()
+  capacity: z
+    .string()
     .min(1, "Capacity is required")
-    .refine((val) => /^\d+$/.test(val), {
-      message: "Capacity must contain only numbers",
-    })
-    .refine((val) => {
-      const num = parseInt(val);
-      return num >= 1 && num <= 20;
-    }, {
-      message: "Capacity must be between 1 and 20",
+    .refine((val) => /^\d+$/.test(val), { message: "Numbers only" })
+    .refine((val) => parseInt(val) >= 1 && parseInt(val) <= 20, {
+      message: "Must be between 1–20",
     }),
   status: z.enum(["empty", "occupied", "booked"]),
 });
@@ -83,7 +73,6 @@ export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogPr
     },
   });
 
-  // Reset form when dialog opens/closes or table changes
   useEffect(() => {
     if (open) {
       form.reset({
@@ -95,7 +84,6 @@ export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogPr
     }
   }, [open, table, form]);
 
-  // Watch for changes to clear duplicate error
   useEffect(() => {
     const subscription = form.watch(() => {
       if (duplicateError) setDuplicateError(null);
@@ -106,27 +94,24 @@ export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogPr
   const onSubmit = async (values: FormValues) => {
     try {
       setDuplicateError(null);
-      
-      // Convert string values to numbers for API
-      const updateData = {
+      await updateTable.mutateAsync({
         id: table.id,
         table_number: parseInt(values.table_number),
         capacity: parseInt(values.capacity),
         status: values.status,
-      };
-
-      await updateTable.mutateAsync(updateData);
-      queryClient.invalidateQueries({queryKey : ['get-tables']})
+      });
+      queryClient.invalidateQueries({ queryKey: ["get-tables"] });
       onOpenChange(false);
     } catch (error: any) {
       console.error("Failed to update table:", error);
-      
-      // Handle duplicate table number error
-      if (error?.message?.includes("already exists") || 
-          error?.response?.data?.error?.includes("already exists")) {
-        setDuplicateError(`Table number ${values.table_number} already exists for another table`);
+      if (
+        error?.message?.includes("already exists") ||
+        error?.response?.data?.error?.includes("already exists")
+      ) {
+        setDuplicateError(
+          `Table number ${values.table_number} already exists for another table`
+        );
       } else {
-        // Show general error
         setDuplicateError(error?.message || "Failed to update table");
       }
     }
@@ -136,184 +121,197 @@ export function EditTableDialog({ open, onOpenChange, table }: EditTableDialogPr
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: string) => void
   ) => {
-    // Allow only numbers
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    onChange(value);
+    onChange(e.target.value.replace(/[^0-9]/g, ""));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Prevent entering 'e', 'E', '+', '-', etc.
-    if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-' || e.key === '.') {
-      e.preventDefault();
-    }
+    if (["e", "E", "+", "-", "."].includes(e.key)) e.preventDefault();
   };
+
+  const hasChanges = form.formState.isDirty;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Table {table.table_number}</DialogTitle>
-          <DialogDescription>
-            Update table details and status
+      <DialogContent className="sm:max-w-md rounded-3xl border border-border bg-card p-0 shadow-xl overflow-hidden">
+        {/* Dialog Header */}
+        <DialogHeader className="relative px-6 pt-6 pb-5 border-b border-border">
+          {/* Gold top line */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+          <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
+            Edit Table {table.table_number}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Update table details and availability status
           </DialogDescription>
         </DialogHeader>
 
-        {duplicateError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{duplicateError}</AlertDescription>
-          </Alert>
-        )}
+        <div className="px-6 py-5 space-y-4">
+          {/* Error */}
+          {duplicateError && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 px-3.5 py-3">
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive leading-snug">{duplicateError}</p>
+            </div>
+          )}
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            <FormField
-              control={form.control}
-              name="table_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Table Number</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter table number"
-                      {...field}
-                      onChange={(e) => handleNumberInput(e, field.onChange)}
-                      onKeyDown={handleKeyDown}
-                      className={form.formState.errors.table_number ? "border-destructive" : ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {!form.formState.errors.table_number && field.value && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Will be converted to: {parseInt(field.value) || 0}
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="capacity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Capacity</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter capacity"
-                      {...field}
-                      onChange={(e) => handleNumberInput(e, field.onChange)}
-                      onKeyDown={handleKeyDown}
-                      className={form.formState.errors.capacity ? "border-destructive" : ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {!form.formState.errors.capacity && field.value && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {parseInt(field.value)} {parseInt(field.value) === 1 ? 'person' : 'people'}
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="table_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium text-foreground">
+                      Table Number
+                    </FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="e.g. 12"
+                        {...field}
+                        onChange={(e) => handleNumberInput(e, field.onChange)}
+                        onKeyDown={handleKeyDown}
+                        className="h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="empty">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-green-500" />
-                          Empty
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="occupied">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-orange-500" />
-                          Occupied
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="booked">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-500" />
-                          Booked
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Preview of changes */}
-            {form.formState.isDirty && !form.formState.errors && (
-              <div className="bg-muted/30 p-3 rounded-lg text-sm">
-                <p className="font-medium mb-1">Changes to be saved:</p>
-                <ul className="space-y-1 text-muted-foreground">
-                  {form.watch('table_number') !== table.table_number.toString() && (
-                    <li className="flex gap-2">
-                      <span className="w-20">Table #:</span>
-                      <span className="font-medium">{table.table_number} → {form.watch('table_number')}</span>
-                    </li>
-                  )}
-                  {form.watch('capacity') !== table.capacity.toString() && (
-                    <li className="flex gap-2">
-                      <span className="w-20">Capacity:</span>
-                      <span className="font-medium">{table.capacity} → {form.watch('capacity')}</span>
-                    </li>
-                  )}
-                  {form.watch('status') !== table.status && (
-                    <li className="flex gap-2">
-                      <span className="w-20">Status:</span>
-                      <span className="font-medium capitalize">{table.status} → {form.watch('status')}</span>
-                    </li>
-                  )}
-                </ul>
-              </div>
-            )}
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={updateTable.isPending || !form.formState.isDirty}
-              >
-                {updateTable.isPending ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Updating...
-                  </>
-                ) : (
-                  "Update Table"
+                    <FormMessage className="text-xs" />
+                  </FormItem>
                 )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              />
+
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium text-foreground">
+                      Seating Capacity
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="e.g. 4"
+                        {...field}
+                        onChange={(e) => handleNumberInput(e, field.onChange)}
+                        onKeyDown={handleKeyDown}
+                        className="h-9 text-sm bg-muted/30 focus:bg-background transition-colors rounded-xl border-border"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                    {!form.formState.errors.capacity && field.value && (
+                      <p className="text-xs text-muted-foreground">
+                        {parseInt(field.value)} {parseInt(field.value) === 1 ? "person" : "people"}
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium text-foreground">
+                      Status
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-9 rounded-xl border-border bg-muted/40 text-sm">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="empty" className="rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Empty
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="occupied" className="rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            Occupied
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="booked" className="rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            Booked
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Changes preview */}
+              {hasChanges && (
+                <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    Changes to be saved
+                  </p>
+                  <div className="space-y-1.5">
+                    {form.watch("table_number") !== table.table_number.toString() && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground w-20">Table #</span>
+                        <span className="font-medium">{table.table_number}</span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-medium text-accent">{form.watch("table_number")}</span>
+                      </div>
+                    )}
+                    {form.watch("capacity") !== table.capacity.toString() && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground w-20">Capacity</span>
+                        <span className="font-medium">{table.capacity}</span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-medium text-accent">{form.watch("capacity")}</span>
+                      </div>
+                    )}
+                    {form.watch("status") !== table.status && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground w-20">Status</span>
+                        <span className="font-medium capitalize">{table.status}</span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-medium capitalize text-accent">{form.watch("status")}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer inside form */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="h-9 rounded-xl text-xs border-border"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateTable.isPending || !hasChanges}
+                  className="h-9 rounded-xl text-xs min-w-[110px]"
+                >
+                  {updateTable.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Updating…
+                    </span>
+                  ) : (
+                    "Update Table"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
