@@ -247,18 +247,13 @@ export default function ApproveUserPage() {
                 }
               />
             )}
-
-            {/* ── RECOVER ── */}
             {pageState === "recover" && (
-              <RequestForm
+              <RecoverForm
                 title="Track your request"
                 subtitle="Re-enter the same details you used earlier to check your approval status."
                 phoneNumber={phoneNumber}
                 tableNumber={tableNumber}
                 formError={formError}
-                isSubmitting={false}
-                emptyTables={emptyTables}
-                tablesLoading={tablesLoading}
                 setPhoneNumber={setPhoneNumber}
                 setTableNumber={setTableNumber}
                 onSubmit={handleRecover}
@@ -273,7 +268,6 @@ export default function ApproveUserPage() {
                 }
               />
             )}
-
             {/* ── WAITING ── */}
             {pageState === "waiting" && (
               <div className="flex flex-col items-center py-2 text-center">
@@ -356,6 +350,77 @@ interface RequestFormProps {
   submitLabel: string
   footer?: React.ReactNode
 }
+
+
+interface RecoverFormProps {
+  title: string
+  subtitle: string
+  phoneNumber: string
+  tableNumber: number
+  formError: string
+  setPhoneNumber: (v: string) => void
+  setTableNumber: (v: number) => void
+  onSubmit: () => void
+  submitLabel: string
+  footer?: React.ReactNode
+}
+
+function RecoverForm({
+  title, subtitle, phoneNumber, tableNumber, formError,
+  setPhoneNumber, setTableNumber, onSubmit, submitLabel, footer,
+}: RecoverFormProps) {
+  return (
+    <>
+      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
+      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
+
+      <div className="mt-6 space-y-3">
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Phone number
+          </label>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="+1 555 000 0000"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Table number
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={tableNumber || ""}
+            onChange={(e) => setTableNumber(Number(e.target.value))}
+            placeholder="e.g. 4"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+        </div>
+
+        {formError && (
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {formError}
+          </p>
+        )}
+
+        <button
+          onClick={onSubmit}
+          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
+        >
+          {submitLabel}
+        </button>
+      </div>
+
+      {footer}
+    </>
+  )
+}
+
 
 function RequestForm({
   title, subtitle, phoneNumber, tableNumber, formError,
