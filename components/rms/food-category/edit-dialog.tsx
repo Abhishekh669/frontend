@@ -55,23 +55,21 @@ export const EditCategoryDialog = memo(function EditCategoryDialog({
   onSave,
   isSaving,
 }: EditCategoryDialogProps) {
-  const [formData, setFormData] = useState<UpdateCategoryLocal>({
-    id: '',
-    name: '',
-    is_active: true,
-    display_order: 0,
-  })
+    const [formData, setFormData] = useState<UpdateCategoryType>({
+        id: '',
+        name: '',
+        is_active: true,
+    });
 
-  useEffect(() => {
-    if (category) {
-      setFormData({
-        id: category.id,
-        name: category.name,
-        is_active: category.is_active,
-        display_order: category.display_order ?? 0,
-      })
-    }
-  }, [category])
+    useEffect(() => {
+        if (category) {
+            setFormData({
+                id: category.id,
+                name: category.name,
+                is_active: category.is_active,
+            });
+        }
+    }, [category]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (isSaving) return
@@ -143,10 +141,63 @@ export const EditCategoryDialog = memo(function EditCategoryDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })
                 }
-                className="h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors"
-                disabled={isSaving}
-              />
-            </div>
+            }}>
+                <DialogHeader>
+                    <DialogTitle>Edit Category</DialogTitle>
+                    <DialogDescription>
+                        Make changes to the category here. Click save when you're done.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">
+                                Name
+                            </Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="col-span-3"
+                                required
+                                disabled={isSaving}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="is_active" className="text-right">
+                                Active
+                            </Label>
+                            <div className="col-span-3 flex items-center space-x-2">
+                                <Checkbox
+                                    id="is_active"
+                                    checked={formData.is_active}
+                                    onCheckedChange={(checked) =>
+                                        setFormData({ ...formData, is_active: checked as boolean })
+                                    }
+                                    disabled={isSaving}
+                                />
+                                <Label htmlFor="is_active">Category is active</Label>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => onOpenChange(false)}
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save changes'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+});
 
             {/* Active toggle */}
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">

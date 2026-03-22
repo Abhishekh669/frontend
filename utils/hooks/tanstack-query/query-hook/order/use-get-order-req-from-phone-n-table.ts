@@ -14,12 +14,9 @@ export const useGetOrderRequestsByTableNumNPhone = (phone : string, table_number
     refetchInterval : pooling ? 5000 : false,
     refetchIntervalInBackground: pooling ? true : false, // Continue polling when tab is in background
     gcTime: 5 * 60 * 1000, // 5 minutes - garbage collection time (formerly cacheTime)
-    retry: 2, // Retry failed requests twice
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     refetchOnWindowFocus: !pooling, // Don't refetch on window focus if polling
     refetchOnMount: true,
     refetchOnReconnect: true,
-    enabled : false,
     staleTime: 30 * 1000,
   });
 }

@@ -1,7 +1,26 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Search, UtensilsCrossed, X, Menu, SlidersHorizontal, ImageOff, Package, Minus, Plus, Trash2 } from "lucide-react";
+import {
+  Search,
+  UtensilsCrossed,
+  X,
+  Menu,
+  SlidersHorizontal,
+  ImageOff,
+  Package,
+  Minus,
+  Plus,
+  Trash2,
+  ClipboardList,
+  ShoppingCart,
+  Clock,
+  CheckCircle2,
+  ChefHat,
+  XCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { useGetCachedMenuItems } from "@/utils/hooks/tanstack-query/query-hook/customer/get-all-cached-menu-items";
 import { useOrderStore } from "@/utils/store/customer-order/use-customer-order";
 
@@ -18,13 +37,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,12 +48,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useGetTables } from "@/utils/hooks/tanstack-query/query-hook/table/use-get-tables";
-import { CreateCustomerOrderRequest } from "@/utils/types/order.types";
+import { CreateCustomerOrderRequest, CustomerOrderRequest, OrderItemType, orderStatus } from "@/utils/types/order.types";
 import { useCreateOrderRequest } from "@/utils/hooks/tanstack-query/mutate-hook/order/use-create-order-request";
 import Image from "next/image";
+import { useGetOrderRequestsByTableNumNPhone } from "@/utils/hooks/tanstack-query/query-hook/order/use-get-order-req-from-phone-n-table";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface TableValidationType {
+  id: string;
+  table_number: number;
+  phone_number: string;
+  waiter_id?: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export interface MenuItemsResponse {
   id: string;
@@ -138,10 +159,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
       <li key={slug}>
         <button
           onClick={() => onSelect(selectedSlug === slug ? null : slug)}
-          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedSlug === slug
+          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+            selectedSlug === slug
               ? "bg-primary text-primary-foreground font-medium"
               : "text-foreground hover:bg-muted"
-            }`}
+          }`}
         >
           {grouped[slug].category_name}
         </button>
@@ -178,10 +200,11 @@ const MobileCategoryHeader: React.FC<MobileCategoryHeaderProps> = ({
       <div className="flex gap-2 min-w-max">
         <button
           onClick={() => onSelect(null)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${!selectedSlug
+          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+            !selectedSlug
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
+          }`}
         >
           All
         </button>
@@ -189,10 +212,11 @@ const MobileCategoryHeader: React.FC<MobileCategoryHeaderProps> = ({
           <button
             key={slug}
             onClick={() => onSelect(selectedSlug === slug ? null : slug)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${selectedSlug === slug
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+              selectedSlug === slug
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
+            }`}
           >
             {grouped[slug].category_name}
           </button>
@@ -238,25 +262,16 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0.5) {
       const rounded = Math.round(numValue * 2) / 2;
-      setQuantities((prev) => ({
-        ...prev,
-        [id]: Number(rounded.toFixed(1)),
-      }));
+      setQuantities((prev) => ({ ...prev, [id]: Number(rounded.toFixed(1)) }));
     } else if (value === "" || value === "-") {
-      setQuantities((prev) => ({
-        ...prev,
-        [id]: 0.5,
-      }));
+      setQuantities((prev) => ({ ...prev, [id]: 0.5 }));
     }
   };
 
   const handleBlur = (id: string, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue < 0.5) {
-      setQuantities((prev) => ({
-        ...prev,
-        [id]: 0.5,
-      }));
+      setQuantities((prev) => ({ ...prev, [id]: 0.5 }));
     }
   };
 
@@ -267,10 +282,10 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
         const group = grouped[slug];
         const items = q
           ? group.menu_items.filter(
-            (item) =>
-              item.name.toLowerCase().includes(q) ||
-              item.description?.toLowerCase().includes(q)
-          )
+              (item) =>
+                item.name.toLowerCase().includes(q) ||
+                item.description?.toLowerCase().includes(q)
+            )
           : group.menu_items;
         const sorted = [...items].sort(
           (a, b) =>
@@ -293,10 +308,7 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
     if (!ok) toast.error("Failed to add item", { duration: 500 });
     else {
       toast.success(`${item.name} added`, { duration: 600 });
-      setQuantities((prev) => ({
-        ...prev,
-        [item.id]: 1,
-      }));
+      setQuantities((prev) => ({ ...prev, [item.id]: 1 }));
     }
   };
 
@@ -318,13 +330,13 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
             <span className="w-1 h-5 bg-primary rounded-full" />
             {category_name}
           </h3>
-
           <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`group bg-card rounded-xl border border-border hover:shadow-md transition-all duration-300 overflow-hidden flex flex-row ${!item.is_available ? "opacity-60" : ""
-                  }`}
+                className={`group bg-card rounded-xl border border-border hover:shadow-md transition-all duration-300 overflow-hidden flex flex-row ${
+                  !item.is_available ? "opacity-60" : ""
+                }`}
               >
                 <div className="flex-1 p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
                   <div>
@@ -347,12 +359,10 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
                       </p>
                     )}
                   </div>
-
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-base text-primary">
                       ₹{item.price.toFixed(0)}
                     </span>
-
                     {item.is_available && (
                       <div className="flex items-center gap-1">
                         <Button
@@ -364,17 +374,17 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </Button>
-
                         <input
                           type="number"
                           min={0.5}
                           step={0.5}
                           value={getQty(item.id)}
-                          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                          onChange={(e) =>
+                            handleQuantityChange(item.id, e.target.value)
+                          }
                           onBlur={(e) => handleBlur(item.id, e.target.value)}
                           className="w-16 text-center text-sm border border-border rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
-
                         <Button
                           size="icon"
                           variant="outline"
@@ -383,7 +393,6 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </Button>
-
                         <Button
                           size="sm"
                           onClick={() => handleAdd(item)}
@@ -396,7 +405,6 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
                     )}
                   </div>
                 </div>
-
                 <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 self-center m-3 rounded-xl overflow-hidden bg-muted">
                   {item.image_url ? (
                     <Image
@@ -421,7 +429,7 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
   );
 };
 
-// ── Cart Item List (shared by both sidebars) ──────────────────────────────────
+// ── Cart Item List ────────────────────────────────────────────────────────────
 
 const CartItemList: React.FC = () => {
   const { orders, updateQuantity, removeOrder } = useOrderStore();
@@ -442,11 +450,14 @@ const CartItemList: React.FC = () => {
   };
 
   const incrementQty = (menuId: string, currentQty: number) => {
-    updateQuantity(menuId, Number(((currentQty + 0.5)).toFixed(1)));
+    updateQuantity(menuId, Number((currentQty + 0.5).toFixed(1)));
   };
 
   const decrementQty = (menuId: string, currentQty: number) => {
-    updateQuantity(menuId, Number((Math.max(0.5, currentQty - 0.5)).toFixed(1)));
+    updateQuantity(
+      menuId,
+      Number((Math.max(0.5, currentQty - 0.5)).toFixed(1))
+    );
   };
 
   if (orders.length === 0) {
@@ -480,7 +491,6 @@ const CartItemList: React.FC = () => {
               </div>
             )}
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-1">
               <h4 className="text-xs font-medium truncate">{item.menu_name}</h4>
@@ -493,11 +503,9 @@ const CartItemList: React.FC = () => {
                 <Trash2 className="w-3 h-3" />
               </Button>
             </div>
-
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {formatCurrency(item.menu_price)} × {item.quantity}
             </p>
-
             <div className="flex items-center justify-between mt-1">
               <div className="flex items-center gap-0.5">
                 <Button
@@ -509,17 +517,17 @@ const CartItemList: React.FC = () => {
                 >
                   <Minus className="w-2.5 h-2.5" />
                 </Button>
-
                 <input
                   type="number"
                   min={0.5}
                   step={0.5}
                   value={item.quantity}
-                  onChange={(e) => handleQtyChange(item.menu_id, e.target.value)}
+                  onChange={(e) =>
+                    handleQtyChange(item.menu_id, e.target.value)
+                  }
                   onBlur={(e) => handleBlur(item.menu_id, e.target.value)}
                   className="h-6 w-10 text-center text-[10px] border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-
                 <Button
                   variant="outline"
                   size="icon"
@@ -529,7 +537,6 @@ const CartItemList: React.FC = () => {
                   <Plus className="w-2.5 h-2.5" />
                 </Button>
               </div>
-
               <span className="text-xs font-medium">
                 {formatCurrency(item.menu_price * item.quantity)}
               </span>
@@ -541,53 +548,38 @@ const CartItemList: React.FC = () => {
   );
 };
 
-// ── Order Footer (shared by both sidebars) ────────────────────────────────────
+// ── Order Footer ──────────────────────────────────────────────────────────────
 
 interface OrderFooterProps {
+  table_validation: TableValidationType;
   onClose?: () => void;
 }
 
-// ── Order Footer (shared by both sidebars) ────────────────────────────────────
-
-interface OrderFooterProps {
-  onClose?: () => void;
-}
-
-const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
+const OrderFooter: React.FC<OrderFooterProps> = ({
+  table_validation,
+  onClose,
+}) => {
   const { orders, clearOrders, getTotalPrice } = useOrderStore();
-  const { data, isLoading, error } = useGetTables(true);
   const { mutate: createOrder, isPending } = useCreateOrderRequest();
-  const [selectedTable, setSelectedTable] = useState("");
   const [note, setNote] = useState("");
 
-  const tables = data?.tables || [];
   const total = getTotalPrice();
   const isEmpty = orders.length === 0;
-  const selectedTableObj = tables.find((t) => t.id === selectedTable);
 
   useEffect(() => {
-    if (isEmpty) {
-      setSelectedTable("");
-      setNote("");
-    }
+    if (isEmpty) setNote("");
   }, [isEmpty]);
 
-  const getTableStatusColor = (status: string) => {
-    switch (status) {
-      case "empty": return "bg-green-500";
-      case "occupied": return "bg-orange-500";
-      case "booked": return "bg-blue-500";
-      default: return "bg-gray-500";
-    }
-  };
-
   const handleRequestOrder = () => {
-    if (isEmpty) { toast.error("Cart is empty", { duration: 800 }); return; }
-    if (!selectedTable) { toast.error("Please select a table", { duration: 800 }); return; }
+    if (isEmpty) {
+      toast.error("Cart is empty", { duration: 800 });
+      return;
+    }
     if (isPending) return;
 
     const payload: CreateCustomerOrderRequest = {
-      table_number: selectedTableObj?.table_number || 0,
+      table_number: table_validation.table_number,
+      customer_phone : table_validation.phone_number,
       note: note || undefined,
       order_menu_items: orders.map((o) => ({
         menu_item_id: o.menu_id,
@@ -601,19 +593,16 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
         if (res.success) {
           toast.success(res.message || "Order requested!");
           clearOrders();
-          setSelectedTable("");
           setNote("");
           onClose?.();
         }
       },
-      onError: (err) =>
-        toast.error(err.message || "Failed to request order"),
+      onError: (err) => toast.error(err.message || "Failed to request order"),
     });
   };
 
   const handleClearCart = () => {
     clearOrders();
-    setSelectedTable("");
     setNote("");
     toast.success("Cart cleared", { duration: 700 });
   };
@@ -622,53 +611,19 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
 
   return (
     <div className="px-3 py-2 space-y-2">
-      {/* Table Selection */}
-      <div className="space-y-1.5">
-        <Select
-          value={selectedTable}
-          onValueChange={setSelectedTable}
-          disabled={isLoading}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Select table" />
-          </SelectTrigger>
-          <SelectContent>
-            {isLoading ? (
-              <SelectItem value="loading" disabled>
-                Loading tables…
-              </SelectItem>
-            ) : tables.length === 0 ? (
-              <SelectItem value="empty" disabled>
-                No tables available
-              </SelectItem>
-            ) : (
-              tables.map((table) => (
-                <SelectItem key={table.id} value={table.id} className="text-xs">
-                  <div className="flex items-center justify-between w-full gap-2">
-                    <span>Table {table.table_number}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground">
-                        {table.capacity}p
-                      </span>
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${getTableStatusColor(table.status)}`}
-                      />
-                    </div>
-                  </div>
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-
-        {selectedTableObj && (
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded">
-            <span className="font-medium">Table {selectedTableObj.table_number}</span>
-            <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
-              {selectedTableObj.capacity} seats • {selectedTableObj.status}
-            </Badge>
+      {/* Table Info — read-only, derived from table_validation */}
+      <div className="flex items-center justify-between bg-muted/40 border border-border px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+            <UtensilsCrossed className="w-3.5 h-3.5 text-primary" />
           </div>
-        )}
+          <span className="text-xs font-medium text-foreground">
+            Table {table_validation.table_number}
+          </span>
+        </div>
+        <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+          Confirmed
+        </Badge>
       </div>
 
       {/* Note Section */}
@@ -697,7 +652,7 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
         />
       </div>
 
-      {/* Cart Summary - Moved above actions for better visibility */}
+      {/* Subtotal */}
       <div className="flex items-center justify-between text-xs py-1">
         <span className="text-muted-foreground">Subtotal</span>
         <span className="font-semibold text-primary">{formatCurrency(total)}</span>
@@ -709,7 +664,7 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
           size="sm"
           className="flex-1 h-9 text-xs font-medium"
           onClick={handleRequestOrder}
-          disabled={!selectedTable || isPending}
+          disabled={isPending}
         >
           {isPending ? (
             <span className="flex items-center gap-1">
@@ -717,18 +672,16 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
               Placing...
             </span>
           ) : (
-            `Place Order`
+            "Place Order"
           )}
         </Button>
 
-        {/* Clear Cart Button - Now more visible with text */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
               size="default"
               className="h-9 px-3 text-xs font-medium border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              disabled={isEmpty}
             >
               <Trash2 className="w-3.5 h-3.5 mr-1" />
               Clear
@@ -738,11 +691,14 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
             <AlertDialogHeader>
               <AlertDialogTitle>Clear your cart?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently remove all {orders.length} items from your cart.
+                This action cannot be undone. This will permanently remove all{" "}
+                {orders.length} items from your cart.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-              <AlertDialogCancel className="mt-0 sm:flex-1">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="mt-0 sm:flex-1">
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleClearCart}
                 className="sm:flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -753,69 +709,439 @@ const OrderFooter: React.FC<OrderFooterProps> = ({ onClose }) => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-
-      {/* Error message if any */}
-      {error && (
-        <p className="text-[9px] text-destructive text-center">
-          Failed to load tables
-        </p>
-      )}
     </div>
   );
 };
+
+
+
+
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface TrackOrderTabProps {
+  table_validation: {
+    phone_number: string;
+    table_number: number;
+  };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<
+  orderStatus,
+  { label: string; color: string; bg: string; border: string; icon: React.ReactNode }
+> = {
+  "not-approved": {
+    label: "Not Approved",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-800",
+    icon: <Clock className="w-3.5 h-3.5" />,
+  },
+  "approved": {
+    // approved = still in pending/waiting state, same visual treatment as pending
+    label: "Pending",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-800",
+    icon: <Clock className="w-3.5 h-3.5" />,
+  },
+  "progress": {
+    label: "Preparing",
+    color: "text-violet-600 dark:text-violet-400",
+    bg: "bg-violet-50 dark:bg-violet-950/40",
+    border: "border-violet-200 dark:border-violet-800",
+    icon: <ChefHat className="w-3.5 h-3.5" />,
+  },
+  "completed": {
+    label: "Completed",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-200 dark:border-emerald-800",
+    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+  },
+  "cancelled": {
+    label: "Cancelled",
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-950/40",
+    border: "border-rose-200 dark:border-rose-800",
+    icon: <XCircle className="w-3.5 h-3.5" />,
+  },
+};
+
+// ─── Progress calculation ──────────────────────────────────────────────────────
+function calcProgress(items: OrderItemType[]): number {
+  if (!items.length) return 0;
+  const weight: Record<orderStatus, number> = {
+    "not-approved": 0,
+    "approved": 0,     // approved = still pending, not started
+    "progress": 0.5,
+    "completed": 1,
+    "cancelled": 0,
+  };
+  const activeItems = items.filter((i) => i.status !== "cancelled");
+  if (!activeItems.length) return 0;
+  const total = activeItems.reduce((sum, i) => sum + (weight[i.status] ?? 0), 0);
+  return Math.round((total / activeItems.length) * 100);
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: orderStatus }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.approved;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color} ${cfg.bg} ${cfg.border}`}
+    >
+      {cfg.icon}
+      {cfg.label}
+    </span>
+  );
+}
+
+function ProgressBar({ percent }: { percent: number }) {
+  return (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[10px] text-muted-foreground font-medium">Overall progress</span>
+        <span className="text-[10px] font-bold text-foreground">{percent}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500 transition-all duration-700"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function OrderItemRow({ item }: { item: OrderItemType }) {
+  const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.approved;
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-0">
+      {/* Image */}
+      {item.menu_image ? (
+        <img
+          src={item.menu_image}
+          alt={item.menu_name}
+          className="w-9 h-9 rounded-lg object-cover shrink-0 border border-border"
+        />
+      ) : (
+        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
+          <UtensilsCrossed className="w-4 h-4 text-muted-foreground/40" />
+        </div>
+      )}
+
+      {/* Name + qty */}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-foreground truncate">{item.menu_name}</p>
+        <p className="text-[10px] text-muted-foreground">
+          x{item.quantity} · ${(item.price * item.quantity).toFixed(2)}
+        </p>
+      </div>
+
+      {/* Status badge */}
+      <StatusBadge status={item.status} />
+    </div>
+  );
+}
+
+function OrderCard({ order }: { order: CustomerOrderRequest }) {
+  const progress = calcProgress(order.order_items);
+  const totalAmount = order.order_items.reduce(
+    (sum, i) => sum + i.price * i.quantity,
+    0
+  );
+  const completedCount = order.order_items.filter((i) => i.status === "completed").length;
+  const totalCount = order.order_items.filter((i) => i.status !== "cancelled").length;
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Card header */}
+      <div className="px-3.5 pt-3 pb-2.5 border-b border-border/60 flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-foreground">
+              Order #{order.id.slice(-6).toUpperCase()}
+            </span>
+            <StatusBadge status={order.status} />
+          </div>
+          {order.customer_name && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">{order.customer_name}</p>
+          )}
+        </div>
+        <span className="text-xs font-bold text-foreground shrink-0">
+          ${totalAmount.toFixed(2)}
+        </span>
+      </div>
+
+      {/* Items */}
+      <div className="px-3.5">
+        {order.order_items.map((item) => (
+          <OrderItemRow key={item.id} item={item} />
+        ))}
+      </div>
+
+      {/* Progress footer */}
+      <div className="px-3.5 pt-2.5 pb-3 space-y-2">
+        <ProgressBar percent={progress} />
+        <p className="text-[10px] text-muted-foreground text-right">
+          {completedCount} of {totalCount} items done
+        </p>
+        {order.note && (
+          <p className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 leading-relaxed">
+            📝 {order.note}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+        <ClipboardList className="w-5 h-5 text-muted-foreground/50" />
+      </div>
+      <p className="text-sm font-medium text-foreground mb-1">No orders yet</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
+        Your placed orders will appear here once confirmed.
+      </p>
+    </div>
+  );
+}
+
+function ErrorState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center mb-3 border border-rose-200 dark:border-rose-800">
+        <AlertCircle className="w-5 h-5 text-rose-500" />
+      </div>
+      <p className="text-sm font-medium text-foreground mb-1">Couldn't load orders</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
+        There was a problem fetching your orders. Please try again.
+      </p>
+    </div>
+  );
+}
+
+function NoApprovedState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center mb-3 border border-amber-200 dark:border-amber-800">
+        <Clock className="w-5 h-5 text-amber-500" />
+      </div>
+      <p className="text-sm font-medium text-foreground mb-1">Waiting for approval</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
+        Your order has been placed and is waiting for the kitchen to approve it.
+      </p>
+    </div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
+  const { data: order, isLoading, isError } = useGetOrderRequestsByTableNumNPhone(
+    table_validation.phone_number,
+    table_validation.table_number,
+    true
+  );
+
+  console.log("this ishte order tracking : ", order)
+
+  // Derived state
+  const hasOrders = order?.success && order.order_request;
+  const orderRequest = order?.order_request as CustomerOrderRequest | undefined;
+  // Order is considered "active" (kitchen has started) only when
+  // at least one item is preparing or completed.
+  // pending + approved are both "waiting" states — show the waiting UI.
+ 
+
+  // Overall progress across all items
+  const overallProgress = orderRequest ? calcProgress(orderRequest.order_items) : 0;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* ── Table Info Card ── */}
+      <div className="px-4 py-3">
+        <div className="rounded-xl border border-border bg-card p-3 space-y-2.5">
+          <div className="flex items-center gap-2 pb-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <UtensilsCrossed className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">
+                Table {table_validation.table_number}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Your session table</p>
+            </div>
+            <Badge variant="secondary" className="ml-auto text-[10px] px-2">
+              Active
+            </Badge>
+          </div>
+
+          {/* Show progress bar in header if orders exist */}
+          {hasOrders  && (
+            <ProgressBar percent={overallProgress} />
+          )}
+        </div>
+      </div>
+
+      {/* ── Content area ── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-40 gap-3">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <p className="text-xs text-muted-foreground">Loading your orders…</p>
+          </div>
+        ) : isError ? (
+          <ErrorState />
+        ) : !hasOrders ? (
+          <EmptyState />
+        ) : (
+          <OrderCard order={orderRequest!} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+// ── Sidebar Tab Switcher ──────────────────────────────────────────────────────
+
+type SidebarTab = "order" | "track";
+
+interface SidebarTabsProps {
+  activeTab: SidebarTab;
+  onTabChange: (tab: SidebarTab) => void;
+  orderCount: number;
+}
+
+const SidebarTabs: React.FC<SidebarTabsProps> = ({
+  activeTab,
+  onTabChange,
+  orderCount,
+}) => (
+  <div className="flex border-b border-border shrink-0 bg-card">
+    <button
+      onClick={() => onTabChange("order")}
+      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+        activeTab === "order"
+          ? "text-primary"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      <ShoppingCart className="w-3.5 h-3.5" />
+      Your Order
+      {orderCount > 0 && (
+        <span className="ml-0.5 w-4 h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+          {orderCount > 9 ? "9+" : orderCount}
+        </span>
+      )}
+      {activeTab === "order" && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+      )}
+    </button>
+    <button
+      onClick={() => onTabChange("track")}
+      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
+        activeTab === "track"
+          ? "text-primary"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      <ClipboardList className="w-3.5 h-3.5" />
+      Track Order
+      {activeTab === "track" && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+      )}
+    </button>
+  </div>
+);
+
 // ── Desktop Order Sidebar ─────────────────────────────────────────────────────
 
-const DesktopOrderSidebar: React.FC = () => {
+interface DesktopOrderSidebarProps {
+  table_validation: TableValidationType;
+}
+
+const DesktopOrderSidebar: React.FC<DesktopOrderSidebarProps> = ({
+  table_validation,
+}) => {
   const { orders } = useOrderStore();
+  const [activeTab, setActiveTab] = useState<SidebarTab>("order");
 
   return (
     <div className="w-96 bg-background border-l border-border flex flex-col h-full max-h-[calc(100vh-116px)]">
-      {/* Header - fixed */}
+      {/* Top header */}
       <div className="px-4 py-3 border-b shrink-0 bg-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-lg">Your Order</h2>
-            {orders.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {orders.length} {orders.length === 1 ? 'item' : 'items'}
-              </Badge>
-            )}
+            <h2 className="font-semibold text-base">
+              Table {table_validation.table_number}
+            </h2>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              Active
+            </Badge>
           </div>
-          {orders.length > 0 && (
+          {orders.length > 0 && activeTab === "order" && (
             <span className="text-sm font-medium text-primary">
-              {formatCurrency(orders.reduce((sum, item) => sum + (item.menu_price * item.quantity), 0))}
+              {formatCurrency(
+                orders.reduce(
+                  (sum, item) => sum + item.menu_price * item.quantity,
+                  0
+                )
+              )}
             </span>
           )}
         </div>
       </div>
 
-      {/* Scrollable cart items - takes remaining space */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="px-4 py-3">
-          <CartItemList />
-        </div>
-      </div>
+      {/* Tabs */}
+      <SidebarTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        orderCount={orders.length}
+      />
 
-      {/* Footer - fixed at bottom */}
-      <div className="shrink-0 border-t bg-card">
-        <OrderFooter />
-      </div>
+      {/* Tab content */}
+      {activeTab === "order" ? (
+        <>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="px-4 py-3">
+              <CartItemList />
+            </div>
+          </div>
+          <div className="shrink-0 border-t bg-card">
+            <OrderFooter table_validation={table_validation} />
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <TrackOrderTab table_validation={table_validation} />
+        </div>
+      )}
     </div>
   );
 };
 
-// ── Mobile Sidebar — shadcn Sheet ─────────────────────────────────────────────
+// ── Mobile Sidebar ────────────────────────────────────────────────────────────
 
 interface MobileSidebarProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  table_validation: TableValidationType;
 }
 
 const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({
   open,
   onOpenChange,
+  table_validation,
 }) => {
   const { orders } = useOrderStore();
+  const [activeTab, setActiveTab] = useState<SidebarTab>("order");
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -827,32 +1153,43 @@ const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({
           onOpenChange(false);
         }}
       >
-        {/* Header - fixed */}
+        {/* Top header */}
         <SheetHeader className="px-4 py-3 border-b shrink-0 bg-card">
-          <SheetTitle className="text-left flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              Your Order
-              {orders.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {orders.length} {orders.length === 1 ? 'item' : 'items'}
-                </Badge>
-              )}
-            </div>
-
+          <SheetTitle className="text-left flex items-center gap-2 text-base">
+            Table {table_validation.table_number}
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              Active
+            </Badge>
           </SheetTitle>
         </SheetHeader>
 
-        {/* Scrollable cart items */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="px-4 py-3">
-            <CartItemList />
-          </div>
-        </div>
+        {/* Tabs */}
+        <SidebarTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          orderCount={orders.length}
+        />
 
-        {/* Footer */}
-        <div className="shrink-0 border-t bg-card">
-          <OrderFooter onClose={() => onOpenChange(false)} />
-        </div>
+        {/* Tab content */}
+        {activeTab === "order" ? (
+          <>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="px-4 py-3">
+                <CartItemList />
+              </div>
+            </div>
+            <div className="shrink-0 border-t bg-card">
+              <OrderFooter
+                table_validation={table_validation}
+                onClose={() => onOpenChange(false)}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <TrackOrderTab table_validation={table_validation} />
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
@@ -860,7 +1197,11 @@ const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export const NewMenuItemsPage: React.FC = () => {
+export const NewMenuItemsPage = ({
+  table_validation,
+}: {
+  table_validation: TableValidationType;
+}) => {
   const { data, isLoading, isError } = useGetCachedMenuItems(true);
 
   const [isMounted, setIsMounted] = useState(false);
@@ -872,7 +1213,9 @@ export const NewMenuItemsPage: React.FC = () => {
   const { orders } = useOrderStore();
   const count = orders.length;
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const grouped_menu = data?.grouped_menu as GroupedMenuResponse | undefined;
 
@@ -893,17 +1236,20 @@ export const NewMenuItemsPage: React.FC = () => {
       const items = grouped_menu[slug].menu_items;
       const filtered = q
         ? items.filter(
-          (i) =>
-            i.name.toLowerCase().includes(q) ||
-            i.description?.toLowerCase().includes(q)
-        )
+            (i) =>
+              i.name.toLowerCase().includes(q) ||
+              i.description?.toLowerCase().includes(q)
+          )
         : items;
       return sum + filtered.length;
     }, 0);
   }, [grouped_menu, visibleSlugs, searchQuery]);
 
   const totalItems = orders.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = orders.reduce((sum, item) => sum + (item.menu_price * item.quantity), 0);
+  const totalPrice = orders.reduce(
+    (sum, item) => sum + item.menu_price * item.quantity,
+    0
+  );
 
   if (!isMounted || isLoading) return <MenuSkeleton />;
 
@@ -912,8 +1258,12 @@ export const NewMenuItemsPage: React.FC = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-4xl mb-3">😕</p>
-          <p className="font-semibold text-lg text-foreground">Error loading menu</p>
-          <p className="text-sm text-muted-foreground mt-1">Please try again later</p>
+          <p className="font-semibold text-lg text-foreground">
+            Error loading menu
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Please try again later
+          </p>
           <Button onClick={() => window.location.reload()} className="mt-4">
             Retry
           </Button>
@@ -936,38 +1286,46 @@ export const NewMenuItemsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-
-      {/* Sticky Header with Order Summary */}
+      {/* Sticky Header */}
       <header className="bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-2 sm:py-3">
-
-          {/* First row: Logo, title, mobile hamburger */}
+          {/* First row */}
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center shrink-0">
               <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-xl font-bold truncate">Our Menu</h1>
+              <h1 className="text-base sm:text-xl font-bold truncate">
+                Our Menu
+              </h1>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {visibleItemCount} item{visibleItemCount !== 1 ? "s" : ""}
               </p>
             </div>
 
-            {/* Desktop order summary */}
-            {orders.length > 0 && (
-              <div className="hidden lg:flex items-center gap-3 bg-secondary/50 px-3 py-1.5 rounded-full">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">
-                    {totalItems} {totalItems === 1 ? 'item' : 'items'}
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <span className="text-sm font-semibold text-primary">
-                  {formatCurrency(totalPrice)}
+            {/* Desktop: table badge + order summary */}
+            <div className="hidden lg:flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-full border border-border">
+                <UtensilsCrossed className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-foreground">
+                  Table {table_validation.table_number}
                 </span>
               </div>
-            )}
+              {orders.length > 0 && (
+                <div className="flex items-center gap-3 bg-secondary/50 px-3 py-1.5 rounded-full">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      {totalItems} {totalItems === 1 ? "item" : "items"}
+                    </span>
+                  </div>
+                  <div className="h-4 w-px bg-border" />
+                  <span className="text-sm font-semibold text-primary">
+                    {formatCurrency(totalPrice)}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Mobile hamburger */}
             <button
@@ -1020,7 +1378,7 @@ export const NewMenuItemsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Package className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs font-medium">
-                  {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                  {totalItems} {totalItems === 1 ? "item" : "items"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -1061,15 +1419,15 @@ export const NewMenuItemsPage: React.FC = () => {
 
       {/* 3-column body */}
       <div className="max-w-6xl mx-auto flex justify-between relative">
-
         {/* Desktop left: category sidebar */}
         <aside className="hidden lg:block w-64 shrink-0 border-r border-border p-4 sticky top-[116px] h-[calc(100vh-116px)] overflow-y-auto">
           <button
             onClick={() => setSelectedSlug(null)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${!selectedSlug
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${
+              !selectedSlug
                 ? "bg-primary text-primary-foreground font-medium"
                 : "text-foreground hover:bg-muted"
-              }`}
+            }`}
           >
             All Items
           </button>
@@ -1095,7 +1453,7 @@ export const NewMenuItemsPage: React.FC = () => {
 
         {/* Desktop right: order sidebar */}
         <aside className="hidden lg:block w-96 shrink-0 sticky top-[116px] h-[calc(100vh-116px)]">
-          <DesktopOrderSidebar />
+          <DesktopOrderSidebar table_validation={table_validation} />
         </aside>
       </div>
 
@@ -1103,6 +1461,7 @@ export const NewMenuItemsPage: React.FC = () => {
       <MobileMenuSidebar
         open={mobileSidebarOpen}
         onOpenChange={setMobileSidebarOpen}
+        table_validation={table_validation}
       />
 
       {/* Mobile: category filter sheet */}
@@ -1117,10 +1476,11 @@ export const NewMenuItemsPage: React.FC = () => {
                 setSelectedSlug(null);
                 setMobileFilterOpen(false);
               }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${!selectedSlug
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${
+                !selectedSlug
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-foreground hover:bg-muted"
-                }`}
+              }`}
             >
               All Items
             </button>
@@ -1137,12 +1497,12 @@ export const NewMenuItemsPage: React.FC = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Quick scroll to top button */}
+      {/* Scroll to top */}
       <Button
         variant="outline"
         size="icon"
         className="fixed bottom-6 right-6 rounded-full shadow-lg bg-background/80 backdrop-blur-sm z-50"
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

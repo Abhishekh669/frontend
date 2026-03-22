@@ -13,14 +13,6 @@ export interface SessionCheckDataType {
   table_number: number
 }
 
-/**
- * idle         → fresh visit, no localStorage data, show the request form
- * recover      → user clicked "Already requested?" — re-enter details to poll
- * waiting      → polling in progress, approval pending
- * approved     → server approved, redirect underway
- * not_approved → waiter declined, show message + retry option
- * not_found    → phone+table combo not in DB, show error + correction options
- */
 type PageState = "idle" | "recover" | "waiting" | "approved" | "not_found"
 
 // ─── localStorage helpers ───────────────────────────────────────────────────────
@@ -52,33 +44,10 @@ function clearStorage() {
 export default function ApproveUserPage() {
   const router = useRouter()
 
-  // ── State — always initialise to SSR-safe defaults ───────────────────────────
-  //
-  // The server has no localStorage, so every useState must start with the same
-  // value the server would produce. We then read localStorage ONCE after mount
-  // (in the hydration useEffect below) and jump to the correct state.
-  //
-  // This guarantees server HTML == first client render == no hydration error.
-
   const [phoneNumber, setPhoneNumber] = useState<string>("")
-  const [tableNumber, setTableNumber] = useState<number>(1)
+  const [tableNumber, setTableNumber] = useState<number>(0) // 0 = not yet set
   const [pageState, setPageState] = useState<PageState>("idle")
   const [pollingEnabled, setPollingEnabled] = useState<boolean>(false)
-
-  // ── Hydration effect — runs once after mount, client-only ─────────────────────
-  //
-  // Safe to read localStorage here because this never runs on the server.
-  // If there is stored data we jump straight into polling (returning visitor).
-
-  useEffect(() => {
-    const stored = readStorage()
-    if (!stored) return                      // fresh visit — stay idle
-    setPhoneNumber(stored.phone_number)
-    setTableNumber(stored.table_number)
-    setPageState("waiting")
-    setPollingEnabled(true)                  // kick off polling immediately
-  }, [])
-
   const [formError, setFormError] = useState("")
   const [dots, setDots] = useState(1)
   const dotsRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -90,27 +59,35 @@ export default function ApproveUserPage() {
 
   const { mutate: createApprovalRequest, isPending: isSubmitting } = useCreateApprovalRequest()
 
-  // POLLING HOOK
-  //
-  // The hook must internally honour:
-  //   enabled:         pollingEnabled
-  //   refetchInterval: pollingEnabled ? 5000 : false
-  //
-  // Because of the lazy initialisers, on Scenario A this already has the right
-  // queryKey and enabled:true on the very first render — no stale fetch.
-  //
-  // What the server action returns / throws:
-  //   • status "approved"     → { success:true,  status:"approved",     message }  (cookie already set)
-  //   • status "not_approved" → { success:false,  status:"not_approved", message }
-  //   • status "not_found"    → throws Error  (server action throws for not_found)
-  //   • network error         → throws Error
-  //
-  // TanStack Query exposes thrown errors via `error`; returned data via `data`.
-
   const {
     data: validationData,
     error: validationError,
   } = useGetTableValidationFromPhoneNTable(phoneNumber, tableNumber, pollingEnabled)
+
+  // ── Sync tableNumber to first available empty table ───────────────────────────
+  // Fires after tables load. Only sets if tableNumber is still 0 (not yet chosen
+  // or just reset) and we are on a form screen (not mid-poll or approved).
+
+  useEffect(() => {
+    if (
+      emptyTables.length > 0 &&
+      tableNumber === 0 &&
+      (pageState === "idle" || pageState === "recover")
+    ) {
+      setTableNumber(emptyTables[0].table_number)
+    }
+  }, [emptyTables, tableNumber, pageState])
+
+  // ── Hydration effect — runs once after mount, client-only ─────────────────────
+
+  useEffect(() => {
+    const stored = readStorage()
+    if (!stored) return
+    setPhoneNumber(stored.phone_number)
+    setTableNumber(stored.table_number)
+    setPageState("waiting")
+    setPollingEnabled(true)
+  }, [])
 
   // ── Handle successful poll response ──────────────────────────────────────────
 
@@ -120,7 +97,6 @@ export default function ApproveUserPage() {
     const status = validationData.status as "approved" | "not_approved" | "pending"
 
     if (status === "approved") {
-      // Cookie already set server-side. Stop polling, clear LS, redirect.
       setPollingEnabled(false)
       clearStorage()
       setPageState("approved")
@@ -128,33 +104,20 @@ export default function ApproveUserPage() {
       return
     }
 
-    if (status === "not_approved") {
-      // Not approved yet — keep polling and stay on waiting UI.
-      // Do NOT stop polling, do NOT clear localStorage.
-      return
-    }
-
-    // status === "pending" → keep polling; do nothing
+    // "not_approved" or "pending" → keep polling, do nothing
   }, [validationData, pollingEnabled, router])
 
-  // ── Handle poll errors (not_found + network errors) ──────────────────────────
-  //
-  // Your server action throws for TWO reasons:
-  //   1. No record found  → throws new Error(data?.error || "failed to get reqeusts")
-  //   2. Network failure  → axios throws, caught and re-thrown via getErrorMessage
-  //
-  // We tell them apart by checking for true network-level keywords.
-  // Everything else the server action throws is a business-logic rejection
-  // (not_found / invalid payload) → show "no such request", NOT "connection lost".
+  // ── Handle poll errors ────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!pollingEnabled || !validationError) return
 
     setPollingEnabled(false)
 
-    const msg = validationError instanceof Error
-      ? validationError.message.toLowerCase()
-      : ""
+    const msg =
+      validationError instanceof Error
+        ? validationError.message.toLowerCase()
+        : ""
 
     const isNetworkError =
       msg.includes("network") ||
@@ -164,17 +127,14 @@ export default function ApproveUserPage() {
       msg.includes("connection")
 
     if (isNetworkError) {
-      // True connectivity failure — let user retry from idle
       setFormError("Connection lost. Please refresh and try again.")
       setPageState("idle")
     } else {
-      // Server responded but found no matching record.
-      // Do NOT clear localStorage — user may have mistyped and needs to correct.
       setPageState("not_found")
     }
   }, [validationError, pollingEnabled])
 
-  // ── Dot animation (waiting screen) ───────────────────────────────────────────
+  // ── Dot animation ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (pageState === "waiting") {
@@ -187,7 +147,7 @@ export default function ApproveUserPage() {
     }
   }, [pageState])
 
-  // ── Shared helper: persist to LS and start polling ───────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────────
 
   const startPolling = (phone: string, table: number) => {
     writeStorage({ phone_number: phone, table_number: table })
@@ -200,15 +160,10 @@ export default function ApproveUserPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
 
-  /**
-   * CASE 1 — fresh approval request.
-   * Validate → call createApprovalRequest API → on success persist LS + poll.
-   */
   const handleSubmit = () => {
     if (!phoneNumber.trim()) return setFormError("Phone number is required.")
     if (!tableNumber) return setFormError("Please select a table.")
     setFormError("")
-
     createApprovalRequest(
       { phone_number: phoneNumber.trim(), table_number: tableNumber },
       {
@@ -220,29 +175,18 @@ export default function ApproveUserPage() {
     )
   }
 
-  /**
-   * CASE 3 — localStorage was cleared (private browsing, manual clear, new tab).
-   * User re-enters their ORIGINAL details. We do NOT create a new request —
-   * we just start polling and let the server tell us the current status.
-   *
-   * If the server returns not_found, we show that screen without clearing LS
-   * so the user can correct their details and retry.
-   * If the server returns data, we also update LS to keep it in sync.
-   */
   const handleRecover = () => {
     if (!phoneNumber.trim()) return setFormError("Phone number is required.")
     if (!tableNumber) return setFormError("Please select a table.")
     setFormError("")
-    // startPolling writes the (possibly corrected) details to localStorage
     startPolling(phoneNumber.trim(), tableNumber)
   }
 
-  /** Reset everything — go back to the blank request form. */
   const handleReset = () => {
     setPollingEnabled(false)
     clearStorage()
     setPhoneNumber("")
-    setTableNumber(emptyTables[0]?.table_number ?? 1)
+    setTableNumber(0) // reset to 0 so sync effect re-picks first empty table
     setFormError("")
     setPageState("idle")
   }
@@ -278,7 +222,7 @@ export default function ApproveUserPage() {
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-sm">
           <div className="p-7">
 
-            {/* ── IDLE — fresh request form ── */}
+            {/* ── IDLE ── */}
             {pageState === "idle" && (
               <RequestForm
                 title="Request approval"
@@ -303,18 +247,13 @@ export default function ApproveUserPage() {
                 }
               />
             )}
-
-            {/* ── RECOVER — Case 3, re-enter details without creating a new request ── */}
             {pageState === "recover" && (
-              <RequestForm
+              <RecoverForm
                 title="Track your request"
                 subtitle="Re-enter the same details you used earlier to check your approval status."
                 phoneNumber={phoneNumber}
                 tableNumber={tableNumber}
                 formError={formError}
-                isSubmitting={false}
-                emptyTables={emptyTables}
-                tablesLoading={tablesLoading}
                 setPhoneNumber={setPhoneNumber}
                 setTableNumber={setTableNumber}
                 onSubmit={handleRecover}
@@ -329,8 +268,7 @@ export default function ApproveUserPage() {
                 }
               />
             )}
-
-            {/* ── WAITING — polling in progress ── */}
+            {/* ── WAITING ── */}
             {pageState === "waiting" && (
               <div className="flex flex-col items-center py-2 text-center">
                 <PulseRing />
@@ -352,7 +290,7 @@ export default function ApproveUserPage() {
               </div>
             )}
 
-            {/* ── APPROVED — redirect in progress ── */}
+            {/* ── APPROVED ── */}
             {pageState === "approved" && (
               <StatusScreen
                 icon="✓"
@@ -362,7 +300,7 @@ export default function ApproveUserPage() {
               />
             )}
 
-            {/* ── NOT FOUND — no matching record, let user correct details ── */}
+            {/* ── NOT FOUND ── */}
             {pageState === "not_found" && (
               <StatusScreen
                 icon="?"
@@ -413,6 +351,77 @@ interface RequestFormProps {
   footer?: React.ReactNode
 }
 
+
+interface RecoverFormProps {
+  title: string
+  subtitle: string
+  phoneNumber: string
+  tableNumber: number
+  formError: string
+  setPhoneNumber: (v: string) => void
+  setTableNumber: (v: number) => void
+  onSubmit: () => void
+  submitLabel: string
+  footer?: React.ReactNode
+}
+
+function RecoverForm({
+  title, subtitle, phoneNumber, tableNumber, formError,
+  setPhoneNumber, setTableNumber, onSubmit, submitLabel, footer,
+}: RecoverFormProps) {
+  return (
+    <>
+      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
+      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
+
+      <div className="mt-6 space-y-3">
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Phone number
+          </label>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="+1 555 000 0000"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Table number
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={tableNumber || ""}
+            onChange={(e) => setTableNumber(Number(e.target.value))}
+            placeholder="e.g. 4"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+        </div>
+
+        {formError && (
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {formError}
+          </p>
+        )}
+
+        <button
+          onClick={onSubmit}
+          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
+        >
+          {submitLabel}
+        </button>
+      </div>
+
+      {footer}
+    </>
+  )
+}
+
+
 function RequestForm({
   title, subtitle, phoneNumber, tableNumber, formError,
   isSubmitting, emptyTables, tablesLoading,
@@ -445,7 +454,7 @@ function RequestForm({
             <div className="h-10 animate-pulse rounded-lg bg-white/[0.04]" />
           ) : (
             <select
-              value={tableNumber}
+              value={tableNumber || ""}
               onChange={(e) => setTableNumber(Number(e.target.value))}
               className="w-full rounded-lg border border-white/[0.08] bg-[#1a1a1a] px-3 py-2.5 text-sm text-white/80 outline-none transition focus:border-white/20"
             >
