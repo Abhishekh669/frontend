@@ -48,7 +48,6 @@ export const EditCategoryDialog = memo(function EditCategoryDialog({
         id: '',
         name: '',
         is_active: true,
-        display_order: 0
     });
 
     useEffect(() => {
@@ -57,7 +56,6 @@ export const EditCategoryDialog = memo(function EditCategoryDialog({
                 id: category.id,
                 name: category.name,
                 is_active: category.is_active,
-                display_order: category.display_order
             });
         }
     }, [category]);
@@ -107,19 +105,6 @@ export const EditCategoryDialog = memo(function EditCategoryDialog({
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="col-span-3"
                                 required
-                                disabled={isSaving}
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="display_order" className="text-right">
-                                Display Order
-                            </Label>
-                            <Input
-                                id="display_order"
-                                type="number"
-                                value={formData.display_order}
-                                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                                className="col-span-3"
                                 disabled={isSaving}
                             />
                         </div>
