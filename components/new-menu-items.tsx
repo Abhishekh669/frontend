@@ -770,7 +770,7 @@ const MobileOrderSheet: React.FC<MobileSidebarProps> = ({ open, onOpenChange }) 
                   </p>
                 </div>
               </div>
-              {orders.length > 0 && (
+              {orders?.length > 0 && (
                 <span className="text-lg font-black text-accent">{formatCurrency(totalPrice)}</span>
               )}
             </div>

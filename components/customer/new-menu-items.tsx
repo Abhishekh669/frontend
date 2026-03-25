@@ -48,7 +48,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CreateCustomerOrderRequest, CustomerOrderRequest, OrderItemType, orderStatus } from "@/utils/types/order.types";
+import {
+  CreateCustomerOrderRequest,
+  CustomerOrderRequest,
+  OrderItemType,
+  orderStatus,
+} from "@/utils/types/order.types";
 import { useCreateOrderRequest } from "@/utils/hooks/tanstack-query/mutate-hook/order/use-create-order-request";
 import Image from "next/image";
 import { useGetOrderRequestsByTableNumNPhone } from "@/utils/hooks/tanstack-query/query-hook/order/use-get-order-req-from-phone-n-table";
@@ -522,9 +527,7 @@ const CartItemList: React.FC = () => {
                   min={0.5}
                   step={0.5}
                   value={item.quantity}
-                  onChange={(e) =>
-                    handleQtyChange(item.menu_id, e.target.value)
-                  }
+                  onChange={(e) => handleQtyChange(item.menu_id, e.target.value)}
                   onBlur={(e) => handleBlur(item.menu_id, e.target.value)}
                   className="h-6 w-10 text-center text-[10px] border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
@@ -579,7 +582,7 @@ const OrderFooter: React.FC<OrderFooterProps> = ({
 
     const payload: CreateCustomerOrderRequest = {
       table_number: table_validation.table_number,
-      customer_phone : table_validation.phone_number,
+      customer_phone: table_validation.phone_number,
       note: note || undefined,
       order_menu_items: orders.map((o) => ({
         menu_item_id: o.menu_id,
@@ -713,10 +716,6 @@ const OrderFooter: React.FC<OrderFooterProps> = ({
   );
 };
 
-
-
-
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TrackOrderTabProps {
@@ -729,7 +728,13 @@ interface TrackOrderTabProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
   orderStatus,
-  { label: string; color: string; bg: string; border: string; icon: React.ReactNode }
+  {
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+    icon: React.ReactNode;
+  }
 > = {
   "not-approved": {
     label: "Not Approved",
@@ -738,29 +743,28 @@ const STATUS_CONFIG: Record<
     border: "border-amber-200 dark:border-amber-800",
     icon: <Clock className="w-3.5 h-3.5" />,
   },
-  "approved": {
-    // approved = still in pending/waiting state, same visual treatment as pending
+  approved: {
     label: "Pending",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/40",
     border: "border-amber-200 dark:border-amber-800",
     icon: <Clock className="w-3.5 h-3.5" />,
   },
-  "progress": {
+  progress: {
     label: "Preparing",
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/40",
     border: "border-violet-200 dark:border-violet-800",
     icon: <ChefHat className="w-3.5 h-3.5" />,
   },
-  "completed": {
+  completed: {
     label: "Completed",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     border: "border-emerald-200 dark:border-emerald-800",
     icon: <CheckCircle2 className="w-3.5 h-3.5" />,
   },
-  "cancelled": {
+  cancelled: {
     label: "Cancelled",
     color: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-50 dark:bg-rose-950/40",
@@ -770,18 +774,22 @@ const STATUS_CONFIG: Record<
 };
 
 // ─── Progress calculation ──────────────────────────────────────────────────────
-function calcProgress(items: OrderItemType[]): number {
-  if (!items.length) return 0;
+// FIX: Guard against null/undefined items
+function calcProgress(items: OrderItemType[] | null | undefined): number {
+  if (!items?.length) return 0;
   const weight: Record<orderStatus, number> = {
     "not-approved": 0,
-    "approved": 0,     // approved = still pending, not started
-    "progress": 0.5,
-    "completed": 1,
-    "cancelled": 0,
+    approved: 0,
+    progress: 0.5,
+    completed: 1,
+    cancelled: 0,
   };
   const activeItems = items.filter((i) => i.status !== "cancelled");
   if (!activeItems.length) return 0;
-  const total = activeItems.reduce((sum, i) => sum + (weight[i.status] ?? 0), 0);
+  const total = activeItems.reduce(
+    (sum, i) => sum + (weight[i.status] ?? 0),
+    0
+  );
   return Math.round((total / activeItems.length) * 100);
 }
 
@@ -803,7 +811,9 @@ function ProgressBar({ percent }: { percent: number }) {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
-        <span className="text-[10px] text-muted-foreground font-medium">Overall progress</span>
+        <span className="text-[10px] text-muted-foreground font-medium">
+          Overall progress
+        </span>
         <span className="text-[10px] font-bold text-foreground">{percent}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -820,7 +830,6 @@ function OrderItemRow({ item }: { item: OrderItemType }) {
   const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.approved;
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-0">
-      {/* Image */}
       {item.menu_image ? (
         <img
           src={item.menu_image}
@@ -833,28 +842,31 @@ function OrderItemRow({ item }: { item: OrderItemType }) {
         </div>
       )}
 
-      {/* Name + qty */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-foreground truncate">{item.menu_name}</p>
+        <p className="text-xs font-semibold text-foreground truncate">
+          {item.menu_name}
+        </p>
         <p className="text-[10px] text-muted-foreground">
-          x{item.quantity} · ${(item.price * item.quantity).toFixed(2)}
+          x{item.quantity} · ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(2)}
         </p>
       </div>
 
-      {/* Status badge */}
       <StatusBadge status={item.status} />
     </div>
   );
 }
 
+// FIX: All order_items accesses use the safe `safeItems` alias with `?? []`
 function OrderCard({ order }: { order: CustomerOrderRequest }) {
-  const progress = calcProgress(order.order_items);
-  const totalAmount = order.order_items.reduce(
-    (sum, i) => sum + i.price * i.quantity,
+  const safeItems: OrderItemType[] = order.order_items ?? [];
+
+  const progress = calcProgress(safeItems);
+  const totalAmount = safeItems.reduce(
+    (sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 0),
     0
   );
-  const completedCount = order.order_items.filter((i) => i.status === "completed").length;
-  const totalCount = order.order_items.filter((i) => i.status !== "cancelled").length;
+  const completedCount = safeItems.filter((i) => i.status === "completed").length;
+  const totalCount = safeItems.filter((i) => i.status !== "cancelled").length;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -868,19 +880,25 @@ function OrderCard({ order }: { order: CustomerOrderRequest }) {
             <StatusBadge status={order.status} />
           </div>
           {order.customer_name && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">{order.customer_name}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {order.customer_name}
+            </p>
           )}
         </div>
         <span className="text-xs font-bold text-foreground shrink-0">
-          ${totalAmount.toFixed(2)}
+          ₹{totalAmount.toFixed(2)}
         </span>
       </div>
 
       {/* Items */}
       <div className="px-3.5">
-        {order.order_items.map((item) => (
-          <OrderItemRow key={item.id} item={item} />
-        ))}
+        {safeItems.length > 0 ? (
+          safeItems.map((item) => <OrderItemRow key={item.id} item={item} />)
+        ) : (
+          <p className="text-xs text-muted-foreground py-3 text-center">
+            No items in this order yet.
+          </p>
+        )}
       </div>
 
       {/* Progress footer */}
@@ -919,7 +937,9 @@ function ErrorState() {
       <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center mb-3 border border-rose-200 dark:border-rose-800">
         <AlertCircle className="w-5 h-5 text-rose-500" />
       </div>
-      <p className="text-sm font-medium text-foreground mb-1">Couldn't load orders</p>
+      <p className="text-sm font-medium text-foreground mb-1">
+        Couldn&apos;t load orders
+      </p>
       <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
         There was a problem fetching your orders. Please try again.
       </p>
@@ -927,40 +947,24 @@ function ErrorState() {
   );
 }
 
-function NoApprovedState() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center mb-3 border border-amber-200 dark:border-amber-800">
-        <Clock className="w-5 h-5 text-amber-500" />
-      </div>
-      <p className="text-sm font-medium text-foreground mb-1">Waiting for approval</p>
-      <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
-        Your order has been placed and is waiting for the kitchen to approve it.
-      </p>
-    </div>
-  );
-}
-
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main TrackOrderTab component ─────────────────────────────────────────────
+// FIX: orderRequest.order_items is guarded everywhere with `?? []`
 const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
-  const { data: order, isLoading, isError } = useGetOrderRequestsByTableNumNPhone(
+  const {
+    data: order,
+    isLoading,
+    isError,
+  } = useGetOrderRequestsByTableNumNPhone(
     table_validation.phone_number,
     table_validation.table_number,
     true
   );
 
-  console.log("this ishte order tracking : ", order)
-
-  // Derived state
   const hasOrders = order?.success && order.order_request;
   const orderRequest = order?.order_request as CustomerOrderRequest | undefined;
-  // Order is considered "active" (kitchen has started) only when
-  // at least one item is preparing or completed.
-  // pending + approved are both "waiting" states — show the waiting UI.
- 
 
-  // Overall progress across all items
-  const overallProgress = orderRequest ? calcProgress(orderRequest.order_items) : 0;
+  // FIX: safe fallback — never pass null to calcProgress
+  const overallProgress = calcProgress(orderRequest?.order_items ?? []);
 
   return (
     <div className="flex flex-col h-full">
@@ -975,7 +979,9 @@ const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
               <p className="text-xs font-semibold text-foreground">
                 Table {table_validation.table_number}
               </p>
-              <p className="text-[10px] text-muted-foreground">Your session table</p>
+              <p className="text-[10px] text-muted-foreground">
+                Your session table
+              </p>
             </div>
             <Badge variant="secondary" className="ml-auto text-[10px] px-2">
               Active
@@ -983,9 +989,7 @@ const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
           </div>
 
           {/* Show progress bar in header if orders exist */}
-          {hasOrders  && (
-            <ProgressBar percent={overallProgress} />
-          )}
+          {hasOrders && <ProgressBar percent={overallProgress} />}
         </div>
       </div>
 
@@ -994,7 +998,9 @@ const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            <p className="text-xs text-muted-foreground">Loading your orders…</p>
+            <p className="text-xs text-muted-foreground">
+              Loading your orders…
+            </p>
           </div>
         ) : isError ? (
           <ErrorState />
@@ -1007,7 +1013,6 @@ const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
     </div>
   );
 };
-
 
 // ── Sidebar Tab Switcher ──────────────────────────────────────────────────────
 
