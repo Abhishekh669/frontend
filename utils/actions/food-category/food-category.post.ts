@@ -86,8 +86,6 @@ export const DeleteCategories = async (categoriesIds: string[]) => {
     } catch (error) {
         error = getErrorMessage(error);
         throw new Error(error as string)
-
-
     }
 }
 

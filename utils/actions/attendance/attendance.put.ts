@@ -5,6 +5,90 @@ import { getErrorMessage } from "@/utils/helper/get-error-message"
 import { AttendanceUpdate, UpdateAttendanceLeave } from "@/utils/types/attendance.types"
 import axios from "axios"
 
+
+export const acceptAttendanceLeaveRequestByAdmin = async(leave_id : string) =>{
+    try {
+    if (!leave_id) {
+      throw new Error("leave id is required")
+    }
+
+    const user_token = await get_cookies("user_token")
+    if (!user_token) {
+      throw new Error("unauthorized user")
+    }
+
+    const res = await axios.patch(
+      `${process.env.NEXT_BACKEND_URL}/api/v1/attendance-service/leave/accept-by-admin/${leave_id}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${user_token}`,
+        },
+        withCredentials: true,
+      }
+    )
+
+    const data = res.data
+    if (!data?.success) {
+      throw new Error(data?.error || "failed to cancel leave request")
+    }
+
+    return {
+      success: data.success,
+      message: data?.message || "leave request cancelled successfully",
+    }
+  } catch (error) {
+    error = getErrorMessage(error)
+    return {
+      success : false,
+      error ,
+    }
+  }
+ 
+}
+
+
+export const cancelLeaveRequestByAdmin = async(leave_id : string) =>{
+    try {
+    if (!leave_id) {
+      throw new Error("leave id is required")
+    }
+
+    const user_token = await get_cookies("user_token")
+    if (!user_token) {
+      throw new Error("unauthorized user")
+    }
+
+    const res = await axios.patch(
+      `${process.env.NEXT_BACKEND_URL}/api/v1/attendance-service/leave/reject-by-admin/${leave_id}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${user_token}`,
+        },
+        withCredentials: true,
+      }
+    )
+
+    const data = res.data
+    if (!data?.success) {
+      throw new Error(data?.error || "failed to cancel leave request")
+    }
+
+    return {
+      success: data.success,
+      message: data?.message || "leave request cancelled successfully",
+    }
+  } catch (error) {
+    error = getErrorMessage(error)
+    return {
+      success : false,
+      error 
+    }
+  }
+ 
+}
+
 export const cancelLeaveRequest = async (leave_id: string) => {
   try {
     if (!leave_id) {
