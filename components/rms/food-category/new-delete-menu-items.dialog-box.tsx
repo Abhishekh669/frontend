@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { MenuItemsResponse, MenuItem, UpdateMenuItemType } from "@/utils/types/food-category.types"
 import { MenuItemDeleteDialog } from "./delete-dialog-box"
-import { EditMenuItemDialog } from "./edit-dialog"
 import { Trash2, Pencil, UtensilsCrossed } from "lucide-react"
 import Image from "next/image"
+import { EditMenuItemDialog } from "./new-update-menu-item-dialog-box"
 
 type Props = {
   menuItems: MenuItemsResponse[]
