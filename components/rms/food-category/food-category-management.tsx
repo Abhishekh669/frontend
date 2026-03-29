@@ -23,7 +23,7 @@ import {
   Filter,
 } from "lucide-react"
 import { User } from "@/utils/types/user.types"
-import { Category } from "@/utils/types/food-category.types"
+import { Category, UpdateCategoryType } from "@/utils/types/food-category.types"
 import { useGetFoodCategories } from "@/utils/hooks/tanstack-query/query-hook/food-category/use-get-all-food-category"
 import { NewCatType } from "@/utils/actions/food-category/food-category.post"
 import { useCreateFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-create-food-category"
@@ -48,11 +48,6 @@ import { useDeleteFoodCategory } from "@/utils/hooks/tanstack-query/mutate-hook/
 
 type SortType = "name-asc" | "name-desc" | "date-newest" | "date-oldest" | "active"
 
-interface UpdateCategoryType {
-  id: string
-  name: string
-  is_active: boolean
-}
 
 function FoodManagementPage({ user }: { user: User }) {
   const router = useRouter()

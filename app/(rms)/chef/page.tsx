@@ -1,11 +1,7 @@
-import React from 'react'
+import KitchenDashboard from '@/components/rms/chef/chef-management'
 
 function page() {
-  return (
-    <div>
-      
-    </div>
-  )
+  return <KitchenDashboard />
 }
 
 export default page

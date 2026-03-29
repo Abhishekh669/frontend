@@ -154,3 +154,20 @@ export interface AttendanceLeaveResponse {
   created_at: string;   // ISO date string
   updated_at: string;   // ISO date string
 }
+
+
+
+export  interface AttendanceLeaveByUserStats {
+  total_requests : number;
+  pending_requests : number;
+  approved_requests : number;
+  rejected_requests : number;
+}
+
+export interface AttendanceLeaveByUserResponse {
+  requests : AttendanceLeaveResponse[],
+  total : number;
+  has_more : boolean;
+  next_offset : number;
+  stats : AttendanceLeaveByUserStats
+}

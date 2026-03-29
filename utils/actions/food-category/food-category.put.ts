@@ -13,6 +13,8 @@ export const updateFoodCategory = async(category : UpdateCategoryType) =>{
         if(!user_token){
             throw new Error("unauthorized user")
         }
+
+        console.log("thisish te update food cateogyr : ", category)
        
       
         const res = await axios.put(`${process.env.NEXT_BACKEND_URL}/api/v1/food-category-service/update-category`,
