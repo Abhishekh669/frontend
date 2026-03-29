@@ -369,7 +369,7 @@ function Skeleton() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function KitchenDashboard() {
-  const { data, isError, isLoading, refetch, isRefetching } = useGetOrdersStatus();
+  const { data, isError, isLoading, refetch, isRefetching } = useGetOrdersStatus(true);
   const rawOrders: CustomerOrderRequest[] = data?.order_requests ?? [];
 
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});

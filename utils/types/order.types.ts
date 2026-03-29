@@ -59,3 +59,26 @@ export interface UpdateOrderItemType {
   order_id : string;
   order_item_id : string;
 }
+
+
+export interface AllOrderStatusForCashier{
+  order_id : string;
+  status : orderStatus;
+  table_number : number;
+  customer_name : string | null;
+  customer_phone : string | null;
+  created_at : string;
+}
+
+export interface ApprovedOrderLists {
+  order_menu_items : OrderItemType[]
+  order_id : string;
+  status : orderStatus
+  table_number : number;
+  customer_name : string | null;
+  customer_phone : string | null;
+  waiter_id : string;
+  waiter_name : string;
+  waiter_image ?: string | null;
+  created_at : string;
+}

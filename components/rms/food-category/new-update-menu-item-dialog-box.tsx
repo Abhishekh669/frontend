@@ -10,19 +10,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import Image from 'next/image'
-import { X } from 'lucide-react'
+import { X, Utensils, Upload, ImageIcon } from 'lucide-react'
 import { MenuItem, UpdateMenuItemType } from '@/utils/types/food-category.types'
 
 interface EditMenuItemDialogProps {
   item: MenuItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  // No 3rd arg — removal is encoded as image_url: null inside data
   onSave: (data: UpdateMenuItemType, imageFile?: File) => Promise<void>
   isSaving: boolean
 }
@@ -32,19 +31,15 @@ export const EditMenuItemDialog = memo(function EditMenuItemDialog({
   open,
   onOpenChange,
   onSave,
-  isSaving
+  isSaving,
 }: EditMenuItemDialogProps) {
   const [formData, setFormData] = useState<UpdateMenuItemType>({
-    id: '',
-    name: '',
-    description: '',
-    price: 0,
-    is_available: true,
-    image_url: '',
-    display_order: 0
+    id: '', name: '', description: '', price: 0, is_available: true, image_url: '', display_order: 0,
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [imageRemoved, setImageRemoved] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     if (item) {
@@ -54,10 +49,12 @@ export const EditMenuItemDialog = memo(function EditMenuItemDialog({
         description: item.description || '',
         price: typeof item.price === 'number' ? item.price : parseFloat(item.price as any),
         is_available: item.is_available,
-        image_url: item.image_url || '',
-        display_order: item.display_order
+        image_url: item.image_url || '',   // ← keep original URL untouched throughout
+        display_order: item.display_order,
       })
       setPreviewUrl(item.image_url || null)
+      setImageRemoved(false)
+      setImageFile(null)
     }
   }, [item])
 
@@ -65,6 +62,22 @@ export const EditMenuItemDialog = memo(function EditMenuItemDialog({
     const file = e.target.files?.[0]
     if (file) {
       setImageFile(file)
+      setImageRemoved(false)
+      const reader = new FileReader()
+      reader.onloadend = () => setPreviewUrl(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false) }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file)
+      setImageRemoved(false)
       const reader = new FileReader()
       reader.onloadend = () => setPreviewUrl(reader.result as string)
       reader.readAsDataURL(file)
@@ -74,158 +87,278 @@ export const EditMenuItemDialog = memo(function EditMenuItemDialog({
   const handleRemoveImage = () => {
     setImageFile(null)
     setPreviewUrl(null)
+    setImageRemoved(true)
+    // NEVER touch formData.image_url here — parent needs it to delete the correct uploadthing file
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    if (isSaving) return
     e.preventDefault()
-    try {
-      await onSave(formData, imageFile || undefined)
-      handleRemoveImage()
-    } catch (error) {
-      console.error('Failed to save:', error)
+    if (isSaving) return
+
+    // Encode removal intent directly in image_url:
+    //   null  → user removed image, no new file → parent deletes old + saves null
+    //   url   → keep existing OR parent will replace after uploading imageFile
+    const resolvedImageUrl: string | null =
+      imageRemoved && !imageFile ? null : formData.image_url || null
+
+    const submitData: UpdateMenuItemType = {
+      ...formData,
+      image_url: resolvedImageUrl as any,
     }
+
+    await onSave(submitData, imageFile ?? undefined)
+    resetState()
+  }
+
+  const resetState = () => {
+    setImageFile(null)
+    setPreviewUrl(null)
+    setImageRemoved(false)
   }
 
   const handleOpenChange = (newOpen: boolean) => {
     if (isSaving) return
+    if (!newOpen) resetState()
     onOpenChange(newOpen)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
+      {/*
+        Key layout rules:
+        - DialogContent is a flex column capped at 90vh
+        - Header: shrink-0 (never scrolls)
+        - form: flex-1 flex-col min-h-0 (fills remaining space)
+          - scrollable area: flex-1 overflow-y-auto min-h-0
+          - footer: shrink-0 (always visible at bottom)
+      */}
       <DialogContent
-        className="sm:max-w-[520px] rounded-3xl border border-border bg-card p-0 shadow-xl overflow-hidden"
+        className="sm:max-w-2xl w-[95vw] max-h-[90vh] rounded-2xl border-0 bg-card p-0 shadow-2xl overflow-hidden flex flex-col"
         onInteractOutside={(e) => { if (isSaving) e.preventDefault() }}
       >
-        {/* Gold top line */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary via-accent to-primary z-10 shrink-0 pointer-events-none" />
 
-        <DialogHeader className="relative px-6 pt-6 pb-5 border-b border-border">
-          <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
-            Edit Menu Item
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Make changes to the menu item. Click save when you're done.
-          </DialogDescription>
+        {/* ── HEADER — never scrolls ──────────────────────────────────── */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
+              <Utensils className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Edit Menu Item
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                Update the details below to modify your menu item
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <ScrollArea className="h-[60vh]">
-            <div className="px-6 py-5 space-y-4">
+        {/* ── FORM — flex column that fills remaining height ─────────── */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+
+          {/* ── SCROLLABLE CONTENT ──────────────────────────────────────── */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 space-y-5">
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1.5">
+                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                Name <span className="text-destructive ml-0.5">*</span>
+              </Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="h-10 text-sm bg-muted/30 border-border/60 rounded-xl focus:bg-background focus:border-primary/50 transition-colors"
+                placeholder="Enter item name"
+                required
+                disabled={isSaving}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1.5">
+                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                Description
+              </Label>
+              <Textarea
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="text-sm bg-muted/30 border-border/60 rounded-xl focus:bg-background focus:border-primary/50 transition-colors resize-none"
+                rows={3}
+                placeholder="Describe your menu item…"
+                disabled={isSaving}
+              />
+            </div>
+
+            {/* Price + Display Order */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Name</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors"
-                  required
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-                <Textarea
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors resize-none"
-                  rows={3}
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Price (Rs)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    className="h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors"
-                    required
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Display Order</Label>
-                  <Input
-                    type="number"
-                    value={formData.display_order}
-                    onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                    className="h-9 text-sm bg-muted/30 focus:bg-background border-border rounded-xl transition-colors"
-                    disabled={isSaving}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-xl bg-muted/30 border border-border px-3 py-2.5">
-                <Checkbox
-                  id="is_available_upd"
-                  checked={formData.is_available}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked as boolean })}
-                  disabled={isSaving}
-                />
-                <Label htmlFor="is_available_upd" className="text-sm cursor-pointer text-foreground">
-                  Item is available
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                  Price (Rs) <span className="text-destructive ml-0.5">*</span>
                 </Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">Image</Label>
-                {previewUrl && (
-                  <div className="relative w-full h-36 rounded-xl overflow-hidden border border-border mb-2">
-                    <Image src={previewUrl} alt="Preview" fill className="object-cover" />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      disabled={isSaving}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-destructive text-white flex items-center justify-center hover:bg-destructive/90 transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
                 <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="h-9 text-sm bg-muted/30 border-border rounded-xl"
-                  disabled={isSaving}
+                  type="number" step="0.01" value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  className="h-10 text-sm bg-muted/30 border-border/60 rounded-xl focus:bg-background focus:border-primary/50 transition-colors"
+                  placeholder="0.00" required disabled={isSaving}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Leave empty to keep current image. New image will replace the old one.
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                  Display Order
+                </Label>
+                <Input
+                  type="number" value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                  className="h-10 text-sm bg-muted/30 border-border/60 rounded-xl focus:bg-background focus:border-primary/50 transition-colors"
+                  placeholder="0" disabled={isSaving}
+                />
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/30 border border-border/60">
+              <Checkbox
+                id="is_available"
+                checked={formData.is_available}
+                onCheckedChange={(c) => setFormData({ ...formData, is_available: c as boolean })}
+                disabled={isSaving}
+                className="mt-0.5"
+              />
+              <div>
+                <Label htmlFor="is_available" className="text-sm font-medium cursor-pointer">
+                  Available for ordering
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Item will be visible and orderable by customers
                 </p>
               </div>
             </div>
-          </ScrollArea>
 
-          <DialogFooter className="px-6 pb-6 flex justify-end gap-2 pt-4 border-t border-border">
+            {/* Image */}
+            <div className="space-y-2">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground flex items-center gap-1.5">
+                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                Item Image
+              </Label>
+
+              {previewUrl && !imageRemoved ? (
+                /* ── Current / new image preview ── */
+                <div className="relative group rounded-xl overflow-hidden border border-border/60 shadow-sm">
+                  {/* Fixed height — never tall enough to push footer off screen */}
+                  <div className="relative w-full h-44">
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-lg shadow-lg gap-1.5"
+                      onClick={handleRemoveImage}
+                      disabled={isSaving}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Remove Image
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* ── Drop zone ── */
+                <div
+                  className={`
+                    relative border-2 border-dashed rounded-xl p-7 text-center
+                    transition-all duration-200 cursor-pointer select-none
+                    ${isDragging
+                      ? 'border-primary bg-primary/5 scale-[0.99]'
+                      : 'border-border/60 bg-muted/20 hover:border-primary/40 hover:bg-muted/40'
+                    }
+                  `}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('image-upload-edit')?.click()}
+                >
+                  <input
+                    id="image-upload-edit"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    disabled={isSaving}
+                  />
+                  <div className="flex flex-col items-center gap-2.5">
+                    <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center">
+                      {imageRemoved
+                        ? <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                        : <Upload className="h-6 w-6 text-primary" />
+                      }
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {imageRemoved
+                          ? 'No image — click or drag to add one'
+                          : isDragging
+                            ? 'Drop your image here'
+                            : 'Click or drag to upload'
+                        }
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5 MB</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted-foreground">
+                {imageRemoved && !imageFile
+                  ? '⚠ Image will be removed on save.'
+                  : previewUrl && !imageFile
+                    ? 'Current image shown. Hover to remove.'
+                    : imageFile
+                      ? 'New image selected — will be uploaded on save.'
+                      : 'Upload a high-quality image for better presentation.'
+                }
+              </p>
+            </div>
+
+          </div>{/* end scrollable content */}
+
+          {/* ── FOOTER — always sticks to bottom ────────────────────────── */}
+          <div className="shrink-0 px-6 pt-4 pb-5 border-t border-border/50 bg-card flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={isSaving}
-              className="rounded-xl h-9 text-sm border-border bg-muted/30 hover:bg-muted/60"
+              className="h-9 px-5 rounded-xl border-border/60 text-sm font-medium hover:bg-muted/50 transition-colors"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSaving}
-              className="rounded-xl h-9 text-sm min-w-28 gap-2"
+              className="h-9 px-6 rounded-xl min-w-[120px] bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold shadow-sm transition-all"
             >
               {isSaving ? (
-                <>
+                <span className="flex items-center gap-2">
                   <span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save changes'
-              )}
+                  Saving…
+                </span>
+              ) : 'Save Changes'}
             </Button>
-          </DialogFooter>
+          </div>
+
         </form>
       </DialogContent>
     </Dialog>

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { MenuItemsResponse, MenuItem, UpdateMenuItemType } from "@/utils/types/food-category.types"
 import { MenuItemDeleteDialog } from "./delete-dialog-box"
-import { EditMenuItemDialog } from "./edit-dialog"
 import { useUpdateMenuItems } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-update-menu-items"
 import { useDeleteMenuItems } from "@/utils/hooks/tanstack-query/mutate-hook/food-category/use-delete-menu-items"
 import { useQueryClient } from "@tanstack/react-query"
@@ -13,6 +12,7 @@ import { toast } from "sonner"
 import { Trash2, Pencil, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { EditMenuItemDialog } from "./new-update-menu-item-dialog-box"
 
 type Props = {
   menuItems: MenuItemsResponse[]
@@ -78,22 +78,45 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
     setEditDialogOpen(true)
   }
 
-  const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
+  const handleSaveMenuItem = async (
+    data: UpdateMenuItemType,
+    imageFile?: File,
+    imageRemoved?: boolean
+  ) => {
     try {
       setUploadingImage(true)
-      let updatedImage: string | null = data.image_url || null
-      if (!imageFile && !data.image_url && itemToEdit?.image_url) {
-        await removeMultipleImages([itemToEdit.image_url])
-        updatedImage = null
+      let updatedImageUrl: string | null = data.image_url || null
+
+      // Case 1: User explicitly removed the image and didn't add a new one
+      if (imageRemoved && !imageFile) {
+        // Delete the old image from uploadthing if it exists
+        if (itemToEdit?.image_url) {
+          await removeMultipleImages([itemToEdit.image_url])
+        }
+        updatedImageUrl = null // ✅ Send null to backend
       }
-      if (imageFile) {
+      // Case 2: User selected a new image — upload it and delete the old one
+      else if (imageFile) {
         const uploadResults = await startUpload([imageFile])
         if (uploadResults?.length) {
-          updatedImage = uploadResults[0].ufsUrl
-          if (data.image_url && data.image_url !== updatedImage) await removeMultipleImages([data.image_url])
-        } else throw new Error("Failed to upload image")
+          const newUrl = uploadResults[0].ufsUrl
+          // Delete old image from uploadthing if it existed
+          if (itemToEdit?.image_url) {
+            await removeMultipleImages([itemToEdit.image_url])
+          }
+          updatedImageUrl = newUrl
+        } else {
+          throw new Error("Failed to upload image")
+        }
       }
-      const updatedData: UpdateMenuItemType = { ...data, image_url: updatedImage }
+      // Case 3: No change to image — keep original image_url
+      // updatedImageUrl already has the original value
+
+      const updatedData: UpdateMenuItemType = { 
+        ...data, 
+        image_url: updatedImageUrl 
+      }
+      
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.message && res.success) {

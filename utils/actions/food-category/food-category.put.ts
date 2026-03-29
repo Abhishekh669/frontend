@@ -51,6 +51,8 @@ export const updateMenuItem = async(menuItem : UpdateMenuItemType) =>{
         if(!user_token){
             throw new Error("unauthorized user")
         }
+
+        console.log("thisish te update menu item : ", menuItem)
       
       
         const res = await axios.put(`${process.env.NEXT_BACKEND_URL}/api/v1/food-category-service/update-menu-item`,

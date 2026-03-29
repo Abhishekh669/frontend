@@ -1,11 +1,7 @@
-import React from 'react'
+import CashierManagementPage from '@/components/rms/cashier/cashier-management'
 
 function page() {
-  return (
-    <div>
-      
-    </div>
-  )
+  return <CashierManagementPage />
 }
 
 export default page

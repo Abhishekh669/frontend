@@ -117,22 +117,38 @@ function NewAllMenuItemsGrouped() {
     setEditDialogOpen(true)
   }
 
-  const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
+const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, imageRemoved?: boolean) => {
     try {
       setUploadingImage(true)
-      let updatedImage: string | null = data.image_url || null
-      if (!imageFile && !data.image_url && itemToEdit?.image_url) {
-        await removeMultipleImages([itemToEdit.image_url])
+      console.log("this is iamge removed : ", imageRemoved, imageFile)
+      let updatedImage: string | null =  data.image_url || null
+      // If image was explicitly removed and no new image selected → delete old image from uploadthing
+      if (imageRemoved && !imageFile) {
+        if (itemToEdit?.image_url) {
+          await removeMultipleImages([itemToEdit.image_url])
+        }
         updatedImage = null
       }
+
+      // If a new image file is provided → upload it, then delete the old one
       if (imageFile) {
         const uploadResults = await startUpload([imageFile])
         if (uploadResults?.length) {
-          updatedImage = uploadResults[0].ufsUrl
-          if (data.image_url && data.image_url !== updatedImage) await removeMultipleImages([data.image_url])
-        } else throw new Error("Failed to upload image")
+          const newUrl = uploadResults[0].ufsUrl
+          // Delete old image from uploadthing if it exists
+          if (itemToEdit?.image_url) {
+            await removeMultipleImages([itemToEdit.image_url])
+          }
+          updatedImage = newUrl
+        } else {
+          throw new Error("Failed to upload image")
+        }
       }
+
+      console.log("this is the image url", updatedImage)
+
       const updatedData: UpdateMenuItemType = { ...data, image_url: updatedImage }
+
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.success && res.message) {
