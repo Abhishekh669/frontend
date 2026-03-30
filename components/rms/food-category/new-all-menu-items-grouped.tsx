@@ -102,6 +102,9 @@ function NewAllMenuItemsGrouped() {
       onSuccess: (res) => {
         if (res.success && res.message) {
           queryClient.invalidateQueries({ queryKey: ["get-all-menu-items"] })
+          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
+          
+
           toast.success(res.message)
           setSelected([])
           setDeleteDialogOpen(false)
@@ -153,6 +156,7 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
         onSuccess: (res) => {
           if (res.success && res.message) {
             queryClient.invalidateQueries({ queryKey: ["get-all-menu-items"] })
+            queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
             toast.success(res.message)
             setEditDialogOpen(false)
             setItemToEdit(null)

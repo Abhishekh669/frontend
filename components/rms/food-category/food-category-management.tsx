@@ -94,6 +94,7 @@ function FoodManagementPage({ user }: { user: User }) {
       onSuccess: (res) => {
         if (res.message && res.success) {
           queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
+          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
           toast.success(res.message || "Category updated successfully")
           setEditingCategory(null)
           setEditFormData(null)
@@ -109,6 +110,7 @@ function FoodManagementPage({ user }: { user: User }) {
       onSuccess: (res) => {
         if (res.message && res.success) {
           queryClient.invalidateQueries({ queryKey: ["get-all-categories"] })
+          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
           toast.success(res.message || `${categoryIds.length} categor${categoryIds.length === 1 ? "y" : "ies"} deleted`)
           setSelectedCategories([])
           setIsDeleteDialogOpen(false)

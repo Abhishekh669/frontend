@@ -1,5 +1,4 @@
 import { getErrorMessage } from "@/utils/helper/get-error-message";
-import { MenuApiResponse } from "@/utils/types/food-category.types";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { GroupedApiResponse } from "../food-category/use-get-all-menu-item";

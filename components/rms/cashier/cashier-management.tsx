@@ -307,7 +307,7 @@ function OrderDetailDialog({
                     Total Amount
                   </span>
                   <span className="text-amber-400 text-xl font-bold">
-                    ${total}
+                    Rs{total}
                   </span>
                 </div>
               </div>
@@ -321,7 +321,7 @@ function OrderDetailDialog({
             Close
           </Button>
           <Button
-            onClick={() => router.push("/cashier/generate-bills")}
+            onClick={() => router.push(`/cashier/generate-bills?id=${order.order_id}`)}
             className="bg-amber-500 hover:bg-amber-600 text-white font-semibold flex items-center gap-2"
           >
             <Receipt className="w-4 h-4" />
@@ -336,6 +336,7 @@ function OrderDetailDialog({
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 function CashierManagementPage() {
+  
   const { data, isError, isLoading } = useGetApprovedOrdersForCashier(true);
 
   const [searchName, setSearchName] = useState("");

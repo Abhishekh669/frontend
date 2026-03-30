@@ -82,3 +82,4 @@ export interface ApprovedOrderLists {
   waiter_image ?: string | null;
   created_at : string;
 }
+

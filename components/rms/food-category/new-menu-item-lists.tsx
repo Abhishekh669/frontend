@@ -61,6 +61,7 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
       onSuccess: (res) => {
         if (res.message && res.success) {
           queryClient.invalidateQueries({ queryKey: ["get-all-by-slug", slugs] })
+          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
           toast.success(res.message)
           setSelected([])
           setDeleteDialogOpen(false)
@@ -121,6 +122,7 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
         onSuccess: (res) => {
           if (res.message && res.success) {
             queryClient.invalidateQueries({ queryKey: ["get-all-by-slug", slugs] })
+            queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
             toast.success(res.message || "Menu item updated successfully")
             setEditDialogOpen(false)
             setItemToEdit(null)
