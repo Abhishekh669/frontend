@@ -103,6 +103,11 @@ const formatCurrency = (amount: number) =>
     minimumFractionDigits: 0,
   }).format(amount);
 
+// ── Design tokens (matching approve-user-page gold aesthetic) ─────────────────
+const GOLD = "#d2a85a";
+const GOLD_SUBTLE = "rgba(210,168,90,0.10)";
+const GOLD_BORDER = "rgba(210,168,90,0.18)";
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 const MenuSkeleton = () => (
@@ -110,33 +115,33 @@ const MenuSkeleton = () => (
     <header className="bg-card border-b border-border sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex items-center gap-3 mb-3">
-          <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+          <Skeleton className="w-10 h-10 rounded-2xl shrink-0" />
           <div className="flex-1 min-w-0">
-            <Skeleton className="h-7 w-32 mb-2" />
-            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-32 mb-2 rounded-full" />
+            <Skeleton className="h-3 w-24 rounded-full" />
           </div>
         </div>
-        <Skeleton className="w-full h-11 rounded-xl mb-3" />
+        <Skeleton className="w-full h-10 rounded-2xl mb-3" />
         <div className="flex gap-2">
           {[80, 96, 112, 80].map((w, i) => (
-            <Skeleton key={i} style={{ width: w }} className="h-9 rounded-full" />
+            <Skeleton key={i} style={{ width: w }} className="h-8 rounded-full" />
           ))}
         </div>
       </div>
     </header>
     <div className="max-w-6xl mx-auto flex">
-      <aside className="hidden lg:block w-64 shrink-0 border-r border-border p-4">
-        <Skeleton className="h-5 w-24 mb-3" />
+      <aside className="hidden lg:block w-64 shrink-0 border-r border-border p-5">
+        <Skeleton className="h-4 w-24 mb-4 rounded-full" />
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-8 w-full" />
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-9 w-full rounded-xl" />
           ))}
         </div>
       </aside>
-      <main className="flex-1 px-4 py-5 sm:py-6">
+      <main className="flex-1 px-4 py-6">
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+            <Skeleton key={i} className="h-32 rounded-2xl" />
           ))}
         </div>
       </main>
@@ -164,12 +169,15 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
       <li key={slug}>
         <button
           onClick={() => onSelect(selectedSlug === slug ? null : slug)}
-          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+          className={`w-full text-left px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 flex items-center gap-2.5 ${
             selectedSlug === slug
-              ? "bg-primary text-primary-foreground font-medium"
-              : "text-foreground hover:bg-muted"
+              ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           }`}
         >
+          {selectedSlug === slug && (
+            <span className="w-1 h-4 rounded-full bg-current opacity-60 shrink-0" />
+          )}
           {grouped[slug].category_name}
         </button>
       </li>
@@ -177,7 +185,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   </ul>
 );
 
-// ── Mobile Category Header — horizontal scrolling chips ───────────────────────
+// ── Mobile Category Header ────────────────────────────────────────────────────
 
 interface MobileCategoryHeaderProps {
   slugs: string[];
@@ -197,18 +205,18 @@ const MobileCategoryHeader: React.FC<MobileCategoryHeaderProps> = ({
   <div className="flex items-center gap-2">
     <button
       onClick={onOpenFilter}
-      className="shrink-0 p-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+      className="shrink-0 h-8 w-8 flex items-center justify-center rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors"
     >
-      <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+      <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
     </button>
-    <div className="overflow-x-auto scrollbar-hide pb-1 flex-1">
-      <div className="flex gap-2 min-w-max">
+    <div className="overflow-x-auto scrollbar-hide pb-0.5 flex-1">
+      <div className="flex gap-1.5 min-w-max">
         <button
           onClick={() => onSelect(null)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+          className={`px-3.5 h-8 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap ${
             !selectedSlug
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
+              ? "bg-foreground text-background shadow-sm"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
           }`}
         >
           All
@@ -217,10 +225,10 @@ const MobileCategoryHeader: React.FC<MobileCategoryHeaderProps> = ({
           <button
             key={slug}
             onClick={() => onSelect(selectedSlug === slug ? null : slug)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`px-3.5 h-8 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap ${
               selectedSlug === slug
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-foreground text-background shadow-sm"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted"
             }`}
           >
             {grouped[slug].category_name}
@@ -319,10 +327,17 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
 
   if (filteredGroups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-        <ImageOff className="w-12 h-12 mb-3 opacity-40" />
-        <p className="font-semibold text-lg">No items found</p>
-        <p className="text-sm mt-1">Try a different category or search term</p>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="relative mb-4">
+          <div className="absolute inset-0 scale-110 rounded-3xl border border-border/40" />
+          <div className="w-16 h-16 rounded-3xl bg-muted/60 border border-border flex items-center justify-center">
+            <ImageOff className="w-6 h-6 text-muted-foreground/50" />
+          </div>
+        </div>
+        <p className="text-sm font-semibold text-foreground">No items found</p>
+        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+          Try a different category or search term
+        </p>
       </div>
     );
   }
@@ -331,85 +346,96 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
     <div className="space-y-8">
       {filteredGroups.map(({ slug, category_name, items }) => (
         <section key={slug}>
-          <h3 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
-            <span className="w-1 h-5 bg-primary rounded-full" />
-            {category_name}
-          </h3>
+          {/* Category heading */}
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="w-1 h-5 rounded-full bg-[var(--accent)]" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
+              {category_name}
+            </h3>
+          </div>
+
           <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`group bg-card rounded-xl border border-border hover:shadow-md transition-all duration-300 overflow-hidden flex flex-row ${
-                  !item.is_available ? "opacity-60" : ""
+                className={`group relative bg-card rounded-2xl border border-border hover:border-border/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-row ${
+                  !item.is_available ? "opacity-55" : ""
                 }`}
               >
-                <div className="flex-1 p-3.5 sm:p-4 flex flex-col justify-between min-w-0">
+                {/* Gold top accent on hover */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
                   <div>
-                    <div className="flex items-start gap-2 mb-1">
-                      <h4 className="font-semibold text-card-foreground text-[15px] leading-tight truncate">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <h4 className="font-semibold text-card-foreground text-[14px] leading-tight">
                         {item.name}
                       </h4>
                       {!item.is_available && (
-                        <Badge
-                          variant="secondary"
-                          className="shrink-0 text-[10px] uppercase tracking-wide"
-                        >
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border bg-muted/60 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           Sold out
-                        </Badge>
+                        </span>
                       )}
                     </div>
                     {item.description && (
-                      <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2 mb-2.5">
+                      <p className="text-muted-foreground text-[12px] leading-relaxed line-clamp-2 mb-3">
                         {item.description}
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-base text-primary">
+
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    {/* Price */}
+                    <span className="font-bold text-[15px] text-foreground">
                       ₹{item.price.toFixed(0)}
                     </span>
+
                     {item.is_available && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => decrementQty(item.id)}
-                          disabled={getQty(item.id) <= 0.5}
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </Button>
-                        <input
-                          type="number"
-                          min={0.5}
-                          step={0.5}
-                          value={getQty(item.id)}
-                          onChange={(e) =>
-                            handleQuantityChange(item.id, e.target.value)
-                          }
-                          onBlur={(e) => handleBlur(item.id, e.target.value)}
-                          className="w-16 text-center text-sm border border-border rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => incrementQty(item.id)}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
+                      <div className="flex items-center gap-1.5">
+                        {/* Qty stepper */}
+                        <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-0.5">
+                          <button
+                            onClick={() => decrementQty(item.id)}
+                            disabled={getQty(item.id) <= 0.5}
+                            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-colors disabled:opacity-30"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <input
+                            type="number"
+                            min={0.5}
+                            step={0.5}
+                            value={getQty(item.id)}
+                            onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                            onBlur={(e) => handleBlur(item.id, e.target.value)}
+                            className="w-10 h-7 text-center text-[12px] font-medium bg-transparent text-foreground focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            onClick={() => incrementQty(item.id)}
+                            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        {/* Add button — gold */}
+                        <button
                           onClick={() => handleAdd(item)}
-                          className="flex items-center gap-1 text-xs h-8 px-3 ml-1"
+                          className="relative flex items-center gap-1.5 h-8 px-3.5 rounded-xl overflow-hidden text-[12px] font-semibold text-[#1a1408] shadow-sm transition-all hover:opacity-90 active:scale-[0.97]"
+                          style={{
+                            background: `linear-gradient(135deg, ${GOLD}, #b48a3c)`,
+                          }}
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+                          <Plus className="w-3 h-3" />
                           ADD
-                        </Button>
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Item image */}
                 <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 self-center m-3 rounded-xl overflow-hidden bg-muted">
                   {item.image_url ? (
                     <Image
@@ -421,7 +447,7 @@ const MenuItemsList: React.FC<MenuItemsListProps> = ({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <ImageOff className="w-6 h-6 text-muted-foreground/40" />
+                      <ImageOff className="w-6 h-6 text-muted-foreground/30" />
                     </div>
                   )}
                 </div>
@@ -459,17 +485,17 @@ const CartItemList: React.FC = () => {
   };
 
   const decrementQty = (menuId: string, currentQty: number) => {
-    updateQuantity(
-      menuId,
-      Number((Math.max(0.5, currentQty - 0.5)).toFixed(1))
-    );
+    updateQuantity(menuId, Number((Math.max(0.5, currentQty - 0.5)).toFixed(1)));
   };
 
   if (orders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <Package className="w-8 h-8 text-muted-foreground/40 mb-2" />
-        <p className="text-xs text-muted-foreground">Your cart is empty</p>
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center mb-3">
+          <Package className="w-5 h-5 text-muted-foreground/40" />
+        </div>
+        <p className="text-[12px] font-medium text-foreground">Cart is empty</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">Add items from the menu</p>
       </div>
     );
   }
@@ -479,49 +505,48 @@ const CartItemList: React.FC = () => {
       {orders.map((item) => (
         <div
           key={item.menu_id}
-          className="flex gap-2 p-1.5 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors"
+          className="flex gap-2.5 p-2 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 transition-colors"
         >
-          <div className="shrink-0 w-10 h-10 rounded-md relative overflow-hidden bg-muted">
+          {/* Image */}
+          <div className="shrink-0 w-10 h-10 rounded-lg relative overflow-hidden bg-muted border border-border">
             {item.menu_image ? (
               <Image
                 src={item.menu_image}
                 alt={item.menu_name || "menu image"}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 100vw, 300px"
+                sizes="40px"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                <UtensilsCrossed className="w-4 h-4 text-muted-foreground/30" />
+              <div className="w-full h-full flex items-center justify-center">
+                <UtensilsCrossed className="w-3.5 h-3.5 text-muted-foreground/30" />
               </div>
             )}
           </div>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-1">
-              <h4 className="text-xs font-medium truncate">{item.menu_name}</h4>
-              <Button
-                variant="ghost"
-                size="icon"
+            <div className="flex items-start justify-between gap-1 mb-0.5">
+              <h4 className="text-[12px] font-semibold truncate text-foreground">{item.menu_name}</h4>
+              <button
                 onClick={() => removeOrder(item.menu_id)}
-                className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10 -mt-0.5 -mr-1"
+                className="h-5 w-5 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors -mt-0.5 -mr-0.5"
               >
                 <Trash2 className="w-3 h-3" />
-              </Button>
+              </button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[10px] text-muted-foreground mb-1.5">
               {formatCurrency(item.menu_price)} × {item.quantity}
             </p>
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-0.5">
-                <Button
-                  variant="outline"
-                  size="icon"
+            <div className="flex items-center justify-between">
+              {/* Mini stepper */}
+              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
+                <button
                   onClick={() => decrementQty(item.menu_id, item.quantity)}
-                  className="h-6 w-6"
                   disabled={item.quantity <= 0.5}
+                  className="h-5 w-5 rounded-md flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-colors disabled:opacity-30"
                 >
                   <Minus className="w-2.5 h-2.5" />
-                </Button>
+                </button>
                 <input
                   type="number"
                   min={0.5}
@@ -529,18 +554,16 @@ const CartItemList: React.FC = () => {
                   value={item.quantity}
                   onChange={(e) => handleQtyChange(item.menu_id, e.target.value)}
                   onBlur={(e) => handleBlur(item.menu_id, e.target.value)}
-                  className="h-6 w-10 text-center text-[10px] border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="h-5 w-9 text-center text-[10px] font-medium bg-transparent text-foreground focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <Button
-                  variant="outline"
-                  size="icon"
+                <button
                   onClick={() => incrementQty(item.menu_id, item.quantity)}
-                  className="h-6 w-6"
+                  className="h-5 w-5 rounded-md flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
                 >
                   <Plus className="w-2.5 h-2.5" />
-                </Button>
+                </button>
               </div>
-              <span className="text-xs font-medium">
+              <span className="text-[12px] font-semibold text-foreground">
                 {formatCurrency(item.menu_price * item.quantity)}
               </span>
             </div>
@@ -558,10 +581,7 @@ interface OrderFooterProps {
   onClose?: () => void;
 }
 
-const OrderFooter: React.FC<OrderFooterProps> = ({
-  table_validation,
-  onClose,
-}) => {
+const OrderFooter: React.FC<OrderFooterProps> = ({ table_validation, onClose }) => {
   const { orders, clearOrders, getTotalPrice } = useOrderStore();
   const { mutate: createOrder, isPending } = useCreateOrderRequest();
   const [note, setNote] = useState("");
@@ -574,10 +594,7 @@ const OrderFooter: React.FC<OrderFooterProps> = ({
   }, [isEmpty]);
 
   const handleRequestOrder = () => {
-    if (isEmpty) {
-      toast.error("Cart is empty", { duration: 800 });
-      return;
-    }
+    if (isEmpty) { toast.error("Cart is empty", { duration: 800 }); return; }
     if (isPending) return;
 
     const payload: CreateCustomerOrderRequest = {
@@ -613,98 +630,95 @@ const OrderFooter: React.FC<OrderFooterProps> = ({
   if (isEmpty) return null;
 
   return (
-    <div className="px-3 py-2 space-y-2">
-      {/* Table Info — read-only, derived from table_validation */}
-      <div className="flex items-center justify-between bg-muted/40 border border-border px-3 py-2 rounded-lg">
+    <div className="px-4 py-3 space-y-3">
+      {/* Table info */}
+      <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <UtensilsCrossed className="w-3.5 h-3.5 text-primary" />
+          <div className="w-6 h-6 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
+            <UtensilsCrossed className="w-3 h-3 text-[var(--accent)]" />
           </div>
-          <span className="text-xs font-medium text-foreground">
+          <span className="text-[12px] font-medium text-foreground">
             Table {table_validation.table_number}
           </span>
         </div>
-        <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border bg-muted/60 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           Confirmed
-        </Badge>
+        </span>
       </div>
 
-      {/* Note Section */}
-      <div className="space-y-1">
+      {/* Special instructions */}
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-[10px] font-medium text-muted-foreground">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.10em] text-muted-foreground/60">
             Special Instructions
           </label>
           {note && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-4 px-1 text-[8px]"
+            <button
               onClick={() => setNote("")}
+              className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
             >
               Clear
-            </Button>
+            </button>
           )}
         </div>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Add any special requests..."
-          rows={1}
-          className="w-full text-xs border border-border rounded-md px-2 py-1.5 bg-background resize-none focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+          placeholder="Add any special requests…"
+          rows={2}
+          className="w-full text-[12px] border border-border rounded-xl px-3 py-2 bg-muted/30 text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring/30 focus:border-ring/50 focus:bg-background transition-all placeholder:text-muted-foreground/40"
         />
       </div>
 
       {/* Subtotal */}
-      <div className="flex items-center justify-between text-xs py-1">
-        <span className="text-muted-foreground">Subtotal</span>
-        <span className="font-semibold text-primary">{formatCurrency(total)}</span>
+      <div className="flex items-center justify-between px-1 py-1 border-t border-border/50">
+        <span className="text-[11px] text-muted-foreground font-medium">Subtotal</span>
+        <span className="text-[14px] font-bold text-foreground">{formatCurrency(total)}</span>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-1">
-        <Button
-          size="sm"
-          className="flex-1 h-9 text-xs font-medium"
+      <div className="flex items-center gap-2">
+        {/* Place order — gold CTA */}
+        <button
           onClick={handleRequestOrder}
           disabled={isPending}
+          className="relative flex-1 flex items-center justify-center gap-2 h-10 rounded-xl text-[13px] font-semibold text-[#1a1408] overflow-hidden shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+          style={{ background: `linear-gradient(135deg, ${GOLD}, #b48a3c)` }}
         >
+          <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
           {isPending ? (
-            <span className="flex items-center gap-1">
-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Placing...
-            </span>
-          ) : (
-            "Place Order"
-          )}
-        </Button>
+            <>
+              <span className="h-3.5 w-3.5 rounded-full border-2 border-[#1a1408]/25 border-t-[#1a1408] animate-spin" />
+              Placing…
+            </>
+          ) : "Place Order"}
+        </button>
 
+        {/* Clear cart */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="default"
-              className="h-9 px-3 text-xs font-medium border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
+            <button className="h-10 px-3 rounded-xl border border-destructive/30 text-destructive bg-transparent text-[12px] font-medium flex items-center gap-1.5 hover:bg-destructive/10 transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />
               Clear
-            </Button>
+            </button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="w-[90%] rounded-lg">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Clear your cart?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently remove all{" "}
-                {orders.length} items from your cart.
+          <AlertDialogContent className="w-[90%] rounded-3xl border border-border bg-card p-0 shadow-xl overflow-hidden">
+            {/* Gold top line */}
+            <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/50 to-transparent" />
+            <AlertDialogHeader className="px-6 pt-6 pb-4 border-b border-border">
+              <AlertDialogTitle className="text-base font-semibold tracking-tight">Clear your cart?</AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-muted-foreground">
+                This will permanently remove all {orders.length} items from your cart.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-              <AlertDialogCancel className="mt-0 sm:flex-1">
+            <AlertDialogFooter className="px-6 py-4 flex flex-col-reverse sm:flex-row gap-2">
+              <AlertDialogCancel className="flex-1 h-9 rounded-xl border-border text-sm">
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleClearCart}
-                className="sm:flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="flex-1 h-9 rounded-xl bg-destructive text-destructive-foreground text-sm hover:bg-destructive/90"
               >
                 Clear Cart
               </AlertDialogAction>
@@ -719,89 +733,73 @@ const OrderFooter: React.FC<OrderFooterProps> = ({
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TrackOrderTabProps {
-  table_validation: {
-    phone_number: string;
-    table_number: number;
-  };
+  table_validation: { phone_number: string; table_number: number };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const STATUS_CONFIG: Record<
   orderStatus,
-  {
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-    icon: React.ReactNode;
-  }
+  { label: string; color: string; bg: string; border: string; dot: string; icon: React.ReactNode }
 > = {
   "not-approved": {
     label: "Not Approved",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/40",
     border: "border-amber-200 dark:border-amber-800",
-    icon: <Clock className="w-3.5 h-3.5" />,
+    dot: "bg-amber-400",
+    icon: <Clock className="w-3 h-3" />,
   },
   approved: {
     label: "Pending",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/40",
     border: "border-amber-200 dark:border-amber-800",
-    icon: <Clock className="w-3.5 h-3.5" />,
+    dot: "bg-amber-400",
+    icon: <Clock className="w-3 h-3" />,
   },
   progress: {
     label: "Preparing",
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/40",
     border: "border-violet-200 dark:border-violet-800",
-    icon: <ChefHat className="w-3.5 h-3.5" />,
+    dot: "bg-violet-400",
+    icon: <ChefHat className="w-3 h-3" />,
   },
   completed: {
     label: "Completed",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     border: "border-emerald-200 dark:border-emerald-800",
-    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+    dot: "bg-emerald-400",
+    icon: <CheckCircle2 className="w-3 h-3" />,
   },
   cancelled: {
     label: "Cancelled",
     color: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-50 dark:bg-rose-950/40",
     border: "border-rose-200 dark:border-rose-800",
-    icon: <XCircle className="w-3.5 h-3.5" />,
+    dot: "bg-rose-400",
+    icon: <XCircle className="w-3 h-3" />,
   },
 };
 
-// ─── Progress calculation ──────────────────────────────────────────────────────
-// FIX: Guard against null/undefined items
 function calcProgress(items: OrderItemType[] | null | undefined): number {
   if (!items?.length) return 0;
   const weight: Record<orderStatus, number> = {
-    "not-approved": 0,
-    approved: 0,
-    progress: 0.5,
-    completed: 1,
-    cancelled: 0,
+    "not-approved": 0, approved: 0, progress: 0.5, completed: 1, cancelled: 0,
   };
   const activeItems = items.filter((i) => i.status !== "cancelled");
   if (!activeItems.length) return 0;
-  const total = activeItems.reduce(
-    (sum, i) => sum + (weight[i.status] ?? 0),
-    0
-  );
+  const total = activeItems.reduce((sum, i) => sum + (weight[i.status] ?? 0), 0);
   return Math.round((total / activeItems.length) * 100);
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: orderStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.approved;
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color} ${cfg.bg} ${cfg.border}`}
-    >
-      {cfg.icon}
+    <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color} ${cfg.bg} ${cfg.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} flex-shrink-0`} />
       {cfg.label}
     </span>
   );
@@ -810,16 +808,19 @@ function StatusBadge({ status }: { status: orderStatus }) {
 function ProgressBar({ percent }: { percent: number }) {
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-[10px] text-muted-foreground font-medium">
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">
           Overall progress
         </span>
-        <span className="text-[10px] font-bold text-foreground">{percent}%</span>
+        <span className="text-[11px] font-bold text-foreground">{percent}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500 transition-all duration-700"
-          style={{ width: `${percent}%` }}
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${percent}%`,
+            background: `linear-gradient(90deg, #7c3aed, #10b981)`,
+          }}
         />
       </div>
     </div>
@@ -827,88 +828,76 @@ function ProgressBar({ percent }: { percent: number }) {
 }
 
 function OrderItemRow({ item }: { item: OrderItemType }) {
-  const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.approved;
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-0">
+    <div className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
       {item.menu_image ? (
         <img
           src={item.menu_image}
           alt={item.menu_name}
-          className="w-9 h-9 rounded-lg object-cover shrink-0 border border-border"
+          className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border"
         />
       ) : (
-        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
-          <UtensilsCrossed className="w-4 h-4 text-muted-foreground/40" />
+        <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border">
+          <UtensilsCrossed className="w-3.5 h-3.5 text-muted-foreground/40" />
         </div>
       )}
-
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-foreground truncate">
-          {item.menu_name}
-        </p>
+        <p className="text-[12px] font-semibold text-foreground truncate">{item.menu_name}</p>
         <p className="text-[10px] text-muted-foreground">
-          x{item.quantity} · ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(2)}
+          ×{item.quantity} · ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(2)}
         </p>
       </div>
-
       <StatusBadge status={item.status} />
     </div>
   );
 }
 
-// FIX: All order_items accesses use the safe `safeItems` alias with `?? []`
 function OrderCard({ order }: { order: CustomerOrderRequest }) {
   const safeItems: OrderItemType[] = order.order_items ?? [];
-
   const progress = calcProgress(safeItems);
-  const totalAmount = safeItems.reduce(
-    (sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 0),
-    0
-  );
+  const totalAmount = safeItems.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 0), 0);
   const completedCount = safeItems.filter((i) => i.status === "completed").length;
   const totalCount = safeItems.filter((i) => i.status !== "cancelled").length;
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
       {/* Card header */}
-      <div className="px-3.5 pt-3 pb-2.5 border-b border-border/60 flex items-start justify-between gap-2">
+      <div className="px-4 pt-3.5 pb-3 border-b border-border/50 flex items-start justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-foreground">
-              Order #{order.id.slice(-6).toUpperCase()}
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-[0.06em]">
+              #{order.id.slice(-6).toUpperCase()}
             </span>
             <StatusBadge status={order.status} />
           </div>
           {order.customer_name && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {order.customer_name}
-            </p>
+            <p className="text-[10px] text-muted-foreground">{order.customer_name}</p>
           )}
         </div>
-        <span className="text-xs font-bold text-foreground shrink-0">
+        <span className="text-[13px] font-bold text-foreground shrink-0">
           ₹{totalAmount.toFixed(2)}
         </span>
       </div>
 
       {/* Items */}
-      <div className="px-3.5">
+      <div className="px-4">
         {safeItems.length > 0 ? (
           safeItems.map((item) => <OrderItemRow key={item.id} item={item} />)
         ) : (
-          <p className="text-xs text-muted-foreground py-3 text-center">
+          <p className="text-[12px] text-muted-foreground py-4 text-center">
             No items in this order yet.
           </p>
         )}
       </div>
 
       {/* Progress footer */}
-      <div className="px-3.5 pt-2.5 pb-3 space-y-2">
+      <div className="px-4 pt-3 pb-4 space-y-2 border-t border-border/50">
         <ProgressBar percent={progress} />
         <p className="text-[10px] text-muted-foreground text-right">
           {completedCount} of {totalCount} items done
         </p>
         {order.note && (
-          <p className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 leading-relaxed">
+          <p className="text-[10px] text-muted-foreground bg-muted/50 rounded-xl px-3 py-2 leading-relaxed border border-border/50">
             📝 {order.note}
           </p>
         )}
@@ -919,12 +908,15 @@ function OrderCard({ order }: { order: CustomerOrderRequest }) {
 
 function EmptyState() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-        <ClipboardList className="w-5 h-5 text-muted-foreground/50" />
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="relative mb-4">
+        <div className="absolute inset-0 scale-110 rounded-3xl border border-border/40" />
+        <div className="w-14 h-14 rounded-3xl bg-muted/60 border border-border flex items-center justify-center">
+          <ClipboardList className="w-5 h-5 text-muted-foreground/40" />
+        </div>
       </div>
-      <p className="text-sm font-medium text-foreground mb-1">No orders yet</p>
-      <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
+      <p className="text-[13px] font-semibold text-foreground mb-1">No orders yet</p>
+      <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[180px]">
         Your placed orders will appear here once confirmed.
       </p>
     </div>
@@ -933,28 +925,25 @@ function EmptyState() {
 
 function ErrorState() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center mb-3 border border-rose-200 dark:border-rose-800">
-        <AlertCircle className="w-5 h-5 text-rose-500" />
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="relative mb-4">
+        <div className="absolute inset-0 scale-110 rounded-3xl border border-destructive/20" />
+        <div className="w-14 h-14 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+          <AlertCircle className="w-5 h-5 text-destructive" />
+        </div>
       </div>
-      <p className="text-sm font-medium text-foreground mb-1">
-        Couldn&apos;t load orders
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
+      <p className="text-[13px] font-semibold text-foreground mb-1">Couldn&apos;t load orders</p>
+      <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[200px]">
         There was a problem fetching your orders. Please try again.
       </p>
     </div>
   );
 }
 
-// ─── Main TrackOrderTab component ─────────────────────────────────────────────
-// FIX: orderRequest.order_items is guarded everywhere with `?? []`
+// ─── TrackOrderTab ─────────────────────────────────────────────────────────────
+
 const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
-  const {
-    data: order,
-    isLoading,
-    isError,
-  } = useGetOrderRequestsByTableNumNPhone(
+  const { data: order, isLoading, isError } = useGetOrderRequestsByTableNumNPhone(
     table_validation.phone_number,
     table_validation.table_number,
     true
@@ -962,45 +951,38 @@ const TrackOrderTab: React.FC<TrackOrderTabProps> = ({ table_validation }) => {
 
   const hasOrders = order?.success && order.order_request;
   const orderRequest = order?.order_request as CustomerOrderRequest | undefined;
-
-  // FIX: safe fallback — never pass null to calcProgress
   const overallProgress = calcProgress(orderRequest?.order_items ?? []);
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Table Info Card ── */}
+      {/* Table info card */}
       <div className="px-4 py-3">
-        <div className="rounded-xl border border-border bg-card p-3 space-y-2.5">
-          <div className="flex items-center gap-2 pb-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-4 h-4 text-primary" />
+        <div className="rounded-2xl border border-border bg-card p-3.5 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center shrink-0">
+              <UtensilsCrossed className="w-4 h-4 text-[var(--accent)]" />
             </div>
-            <div>
-              <p className="text-xs font-semibold text-foreground">
+            <div className="flex-1">
+              <p className="text-[12px] font-semibold text-foreground">
                 Table {table_validation.table_number}
               </p>
-              <p className="text-[10px] text-muted-foreground">
-                Your session table
-              </p>
+              <p className="text-[10px] text-muted-foreground">Your session table</p>
             </div>
-            <Badge variant="secondary" className="ml-auto text-[10px] px-2">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Active
-            </Badge>
+            </span>
           </div>
-
-          {/* Show progress bar in header if orders exist */}
           {hasOrders && <ProgressBar percent={overallProgress} />}
         </div>
       </div>
 
-      {/* ── Content area ── */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            <p className="text-xs text-muted-foreground">
-              Loading your orders…
-            </p>
+            <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
+            <p className="text-[11px] text-muted-foreground">Loading your orders…</p>
           </div>
         ) : isError ? (
           <ErrorState />
@@ -1024,47 +1006,78 @@ interface SidebarTabsProps {
   orderCount: number;
 }
 
-const SidebarTabs: React.FC<SidebarTabsProps> = ({
-  activeTab,
-  onTabChange,
-  orderCount,
-}) => (
-  <div className="flex border-b border-border shrink-0 bg-card">
-    <button
-      onClick={() => onTabChange("order")}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
-        activeTab === "order"
-          ? "text-primary"
-          : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <ShoppingCart className="w-3.5 h-3.5" />
-      Your Order
-      {orderCount > 0 && (
-        <span className="ml-0.5 w-4 h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
-          {orderCount > 9 ? "9+" : orderCount}
-        </span>
-      )}
-      {activeTab === "order" && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
-      )}
-    </button>
-    <button
-      onClick={() => onTabChange("track")}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors relative ${
-        activeTab === "track"
-          ? "text-primary"
-          : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <ClipboardList className="w-3.5 h-3.5" />
-      Track Order
-      {activeTab === "track" && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
-      )}
-    </button>
+const SidebarTabs: React.FC<SidebarTabsProps> = ({ activeTab, onTabChange, orderCount }) => (
+  <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border bg-card shrink-0">
+    <div className="flex items-center w-full rounded-xl border border-border bg-muted/40 p-0.5 gap-0.5">
+      {(["order", "track"] as SidebarTab[]).map((tab) => {
+        const isActive = activeTab === tab;
+        return (
+          <button
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-lg text-[11px] font-semibold transition-all ${
+              isActive
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab === "order" ? (
+              <>
+                <ShoppingCart className="w-3 h-3" />
+                Your Order
+                {orderCount > 0 && (
+                  <span className="ml-0.5 min-w-4 h-4 px-1 bg-foreground text-background text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {orderCount > 9 ? "9+" : orderCount}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <ClipboardList className="w-3 h-3" />
+                Track Order
+              </>
+            )}
+          </button>
+        );
+      })}
+    </div>
   </div>
 );
+
+// ── Sidebar header ────────────────────────────────────────────────────────────
+
+function SidebarHeader({
+  tableNumber,
+  total,
+  showTotal,
+}: {
+  tableNumber: number;
+  total: number;
+  showTotal: boolean;
+}) {
+  return (
+    <div className="relative px-4 py-3.5 border-b border-border shrink-0 bg-card">
+      {/* Gold top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-[14px] font-bold tracking-tight text-foreground">
+            Table {tableNumber}
+          </h2>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Active
+          </span>
+        </div>
+        {showTotal && (
+          <span className="text-[14px] font-bold text-foreground">
+            {formatCurrency(total)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Desktop Order Sidebar ─────────────────────────────────────────────────────
 
@@ -1072,46 +1085,20 @@ interface DesktopOrderSidebarProps {
   table_validation: TableValidationType;
 }
 
-const DesktopOrderSidebar: React.FC<DesktopOrderSidebarProps> = ({
-  table_validation,
-}) => {
+const DesktopOrderSidebar: React.FC<DesktopOrderSidebarProps> = ({ table_validation }) => {
   const { orders } = useOrderStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>("order");
+  const cartTotal = orders.reduce((sum, item) => sum + item.menu_price * item.quantity, 0);
 
   return (
     <div className="w-96 bg-background border-l border-border flex flex-col h-full max-h-[calc(100vh-116px)]">
-      {/* Top header */}
-      <div className="px-4 py-3 border-b shrink-0 bg-card">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-base">
-              Table {table_validation.table_number}
-            </h2>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              Active
-            </Badge>
-          </div>
-          {orders.length > 0 && activeTab === "order" && (
-            <span className="text-sm font-medium text-primary">
-              {formatCurrency(
-                orders.reduce(
-                  (sum, item) => sum + item.menu_price * item.quantity,
-                  0
-                )
-              )}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <SidebarTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        orderCount={orders.length}
+      <SidebarHeader
+        tableNumber={table_validation.table_number}
+        total={cartTotal}
+        showTotal={orders.length > 0 && activeTab === "order"}
       />
+      <SidebarTabs activeTab={activeTab} onTabChange={setActiveTab} orderCount={orders.length} />
 
-      {/* Tab content */}
       {activeTab === "order" ? (
         <>
           <div className="flex-1 overflow-y-auto min-h-0">
@@ -1119,7 +1106,7 @@ const DesktopOrderSidebar: React.FC<DesktopOrderSidebarProps> = ({
               <CartItemList />
             </div>
           </div>
-          <div className="shrink-0 border-t bg-card">
+          <div className="shrink-0 border-t border-border bg-card">
             <OrderFooter table_validation={table_validation} />
           </div>
         </>
@@ -1140,42 +1127,29 @@ interface MobileSidebarProps {
   table_validation: TableValidationType;
 }
 
-const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({
-  open,
-  onOpenChange,
-  table_validation,
-}) => {
+const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({ open, onOpenChange, table_validation }) => {
   const { orders } = useOrderStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>("order");
+  const cartTotal = orders.reduce((sum, item) => sum + item.menu_price * item.quantity, 0);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-[85%] sm:w-96 p-0 flex flex-col h-full"
-        onInteractOutside={(e) => {
-          e.preventDefault();
-          onOpenChange(false);
-        }}
+        className="w-[85%] sm:w-96 p-0 flex flex-col h-full border-l border-border bg-background"
+        onInteractOutside={(e) => { e.preventDefault(); onOpenChange(false); }}
       >
-        {/* Top header */}
-        <SheetHeader className="px-4 py-3 border-b shrink-0 bg-card">
-          <SheetTitle className="text-left flex items-center gap-2 text-base">
-            Table {table_validation.table_number}
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              Active
-            </Badge>
-          </SheetTitle>
+        <SheetHeader className="p-0 shrink-0">
+          <SheetTitle className="sr-only">Order sidebar</SheetTitle>
+          <SidebarHeader
+            tableNumber={table_validation.table_number}
+            total={cartTotal}
+            showTotal={orders.length > 0 && activeTab === "order"}
+          />
         </SheetHeader>
 
-        {/* Tabs */}
-        <SidebarTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          orderCount={orders.length}
-        />
+        <SidebarTabs activeTab={activeTab} onTabChange={setActiveTab} orderCount={orders.length} />
 
-        {/* Tab content */}
         {activeTab === "order" ? (
           <>
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -1183,11 +1157,8 @@ const MobileMenuSidebar: React.FC<MobileSidebarProps> = ({
                 <CartItemList />
               </div>
             </div>
-            <div className="shrink-0 border-t bg-card">
-              <OrderFooter
-                table_validation={table_validation}
-                onClose={() => onOpenChange(false)}
-              />
+            <div className="shrink-0 border-t border-border bg-card">
+              <OrderFooter table_validation={table_validation} onClose={() => onOpenChange(false)} />
             </div>
           </>
         ) : (
@@ -1218,60 +1189,47 @@ export const NewMenuItemsPage = ({
   const { orders } = useOrderStore();
   const count = orders.length;
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => { setIsMounted(true); }, []);
 
   const grouped_menu = data?.grouped_menu as GroupedMenuResponse | undefined;
-
-  const allSlugs = useMemo(
-    () => (grouped_menu ? Object.keys(grouped_menu) : []),
-    [grouped_menu]
-  );
-
-  const visibleSlugs = useMemo(
-    () => (selectedSlug ? [selectedSlug] : allSlugs),
-    [selectedSlug, allSlugs]
-  );
+  const allSlugs = useMemo(() => (grouped_menu ? Object.keys(grouped_menu) : []), [grouped_menu]);
+  const visibleSlugs = useMemo(() => (selectedSlug ? [selectedSlug] : allSlugs), [selectedSlug, allSlugs]);
 
   const visibleItemCount = useMemo(() => {
     if (!grouped_menu) return 0;
     const q = searchQuery.trim().toLowerCase();
     return visibleSlugs.reduce((sum, slug) => {
       const items = grouped_menu[slug].menu_items;
-      const filtered = q
-        ? items.filter(
-            (i) =>
-              i.name.toLowerCase().includes(q) ||
-              i.description?.toLowerCase().includes(q)
-          )
-        : items;
+      const filtered = q ? items.filter((i) => i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q)) : items;
       return sum + filtered.length;
     }, 0);
   }, [grouped_menu, visibleSlugs, searchQuery]);
 
   const totalItems = orders.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = orders.reduce(
-    (sum, item) => sum + item.menu_price * item.quantity,
-    0
-  );
+  const totalPrice = orders.reduce((sum, item) => sum + item.menu_price * item.quantity, 0);
 
   if (!isMounted || isLoading) return <MenuSkeleton />;
 
   if (isError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-4xl mb-3">😕</p>
-          <p className="font-semibold text-lg text-foreground">
-            Error loading menu
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Please try again later
-          </p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
+        <div className="text-center max-w-xs">
+          <div className="relative inline-flex mb-4">
+            <div className="absolute inset-0 scale-110 rounded-3xl border border-destructive/20" />
+            <div className="w-16 h-16 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-destructive" />
+            </div>
+          </div>
+          <p className="text-sm font-semibold text-foreground mb-1">Error loading menu</p>
+          <p className="text-xs text-muted-foreground mt-1 mb-4">Please try again later</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="relative flex items-center justify-center h-9 px-6 rounded-xl text-[13px] font-semibold text-[#1a1408] overflow-hidden shadow-sm mx-auto"
+            style={{ background: `linear-gradient(135deg, ${GOLD}, #b48a3c)` }}
+          >
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
             Retry
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -1280,66 +1238,63 @@ export const NewMenuItemsPage = ({
   if (!grouped_menu || allSlugs.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">No menu data available</p>
+        <p className="text-muted-foreground text-sm">No menu data available</p>
       </div>
     );
   }
 
-  const selectedCategoryName = selectedSlug
-    ? grouped_menu[selectedSlug]?.category_name
-    : null;
+  const selectedCategoryName = selectedSlug ? grouped_menu[selectedSlug]?.category_name : null;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-3">
+
+      {/* ── Sticky Header ── */}
+      <header className="bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+        {/* Gold top line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent" />
+
+        <div className="max-w-6xl mx-auto px-4 py-2.5 sm:py-3">
+
           {/* First row */}
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+          <div className="flex items-center gap-3 mb-2.5">
+            {/* Brand icon */}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
             </div>
+
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-xl font-bold truncate">
+              <h1 className="text-[15px] sm:text-[17px] font-bold tracking-tight text-foreground truncate">
                 Our Menu
               </h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground">
                 {visibleItemCount} item{visibleItemCount !== 1 ? "s" : ""}
               </p>
             </div>
 
             {/* Desktop: table badge + order summary */}
             <div className="hidden lg:flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-full border border-border">
-                <UtensilsCrossed className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-foreground">
-                  Table {table_validation.table_number}
-                </span>
-              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/40 text-[11px] font-medium text-foreground">
+                <UtensilsCrossed className="w-3 h-3 text-muted-foreground" />
+                Table {table_validation.table_number}
+              </span>
               {orders.length > 0 && (
-                <div className="flex items-center gap-3 bg-secondary/50 px-3 py-1.5 rounded-full">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">
-                      {totalItems} {totalItems === 1 ? "item" : "items"}
-                    </span>
-                  </div>
-                  <div className="h-4 w-px bg-border" />
-                  <span className="text-sm font-semibold text-primary">
-                    {formatCurrency(totalPrice)}
-                  </span>
-                </div>
+                <span className="inline-flex items-center gap-2 bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-3 py-1.5 rounded-full">
+                  <Package className="w-3.5 h-3.5 text-[var(--accent)]" />
+                  <span className="text-[11px] font-semibold text-foreground">{totalItems} {totalItems === 1 ? "item" : "items"}</span>
+                  <span className="w-px h-3 bg-border" />
+                  <span className="text-[11px] font-bold text-foreground">{formatCurrency(totalPrice)}</span>
+                </span>
               )}
             </div>
 
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="relative lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors"
+              className="relative lg:hidden h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors"
             >
-              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Menu className="w-4 h-4 text-foreground" />
               {count > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[9px] sm:text-[11px] font-bold rounded-full flex items-center justify-center leading-none">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-foreground text-background text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
                   {count > 99 ? "99+" : count}
                 </span>
               )}
@@ -1347,21 +1302,21 @@ export const NewMenuItemsPage = ({
           </div>
 
           {/* Search bar */}
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+          <div className="relative mb-2.5">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
               type="text"
               placeholder="Search dishes…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 sm:pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2.5 text-sm bg-secondary rounded-lg sm:rounded-xl border-none focus-visible:ring-1 focus-visible:ring-primary/30"
+              className="pl-9 pr-9 h-9 text-sm bg-muted/30 rounded-2xl border-border focus-visible:ring-1 focus-visible:ring-ring/30 focus-visible:border-ring/50 focus-visible:bg-background transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -1379,43 +1334,38 @@ export const NewMenuItemsPage = ({
 
           {/* Mobile cart indicator */}
           {orders.length > 0 && (
-            <div className="lg:hidden mt-2 flex items-center justify-between bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20">
+            <div className="lg:hidden mt-2 flex items-center justify-between rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/8 px-3 py-2">
               <div className="flex items-center gap-2">
-                <Package className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-medium">
+                <Package className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span className="text-[11px] font-semibold text-foreground">
                   {totalItems} {totalItems === 1 ? "item" : "items"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-primary">
-                  {formatCurrency(totalPrice)}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs"
+                <span className="text-[11px] font-bold text-foreground">{formatCurrency(totalPrice)}</span>
+                <button
                   onClick={() => setMobileSidebarOpen(true)}
+                  className="h-7 px-3 rounded-lg text-[11px] font-semibold text-[#1a1408] relative overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, ${GOLD}, #b48a3c)` }}
                 >
+                  <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
                   View Cart
-                </Button>
+                </button>
               </div>
             </div>
           )}
         </div>
       </header>
 
-      {/* Active category strip (mobile only) */}
+      {/* Active category strip (mobile) */}
       {selectedCategoryName && (
-        <div className="lg:hidden bg-secondary/50 px-4 py-2 flex items-center justify-between sticky top-[136px] sm:top-[152px] z-40 backdrop-blur-sm border-b border-border">
-          <span className="text-xs sm:text-sm text-muted-foreground">
-            Showing:{" "}
-            <span className="font-medium text-foreground">
-              {selectedCategoryName}
-            </span>
+        <div className="lg:hidden bg-card/80 backdrop-blur-sm px-4 py-2 flex items-center justify-between sticky top-[142px] sm:top-[156px] z-40 border-b border-border">
+          <span className="text-[11px] text-muted-foreground">
+            Showing: <span className="font-semibold text-foreground">{selectedCategoryName}</span>
           </span>
           <button
             onClick={() => setSelectedSlug(null)}
-            className="text-[10px] sm:text-xs bg-card text-secondary-foreground px-2 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-muted transition-colors font-medium shadow-sm"
+            className="text-[10px] font-medium bg-muted/60 border border-border text-muted-foreground px-2.5 py-1 rounded-full hover:bg-muted transition-colors"
           >
             Clear filter
           </button>
@@ -1424,21 +1374,26 @@ export const NewMenuItemsPage = ({
 
       {/* 3-column body */}
       <div className="max-w-6xl mx-auto flex justify-between relative">
+
         {/* Desktop left: category sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border p-4 sticky top-[116px] h-[calc(100vh-116px)] overflow-y-auto">
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-border px-4 py-5 sticky top-[116px] h-[calc(100vh-116px)] overflow-y-auto gap-1">
+          {/* All items button */}
           <button
             onClick={() => setSelectedSlug(null)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all mb-1 flex items-center gap-2 ${
               !selectedSlug
-                ? "bg-primary text-primary-foreground font-medium"
-                : "text-foreground hover:bg-muted"
+                ? "bg-foreground text-background shadow-sm"
+                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             }`}
           >
             All Items
           </button>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-4">
+
+          {/* Section label */}
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]/70 px-3 py-2">
             Categories
-          </h2>
+          </p>
+
           <CategoryFilter
             slugs={allSlugs}
             grouped={grouped_menu}
@@ -1471,58 +1426,44 @@ export const NewMenuItemsPage = ({
 
       {/* Mobile: category filter sheet */}
       <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
-        <SheetContent side="left" className="w-72 p-0">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle className="text-left">Categories</SheetTitle>
+        <SheetContent side="left" className="w-72 p-0 border-r border-border bg-background">
+          <SheetHeader className="relative px-5 py-4 border-b border-border">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/40 to-transparent" />
+            <SheetTitle className="text-left text-[14px] font-bold tracking-tight">Categories</SheetTitle>
           </SheetHeader>
           <ScrollArea className="h-full p-4">
             <button
-              onClick={() => {
-                setSelectedSlug(null);
-                setMobileFilterOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${
+              onClick={() => { setSelectedSlug(null); setMobileFilterOpen(false); }}
+              className={`w-full text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all mb-1 ${
                 !selectedSlug
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-foreground hover:bg-muted"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
             >
               All Items
             </button>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]/70 px-3 py-2">
+              Categories
+            </p>
             <CategoryFilter
               slugs={allSlugs}
               grouped={grouped_menu}
               selectedSlug={selectedSlug}
-              onSelect={(slug) => {
-                setSelectedSlug(slug);
-                setMobileFilterOpen(false);
-              }}
+              onSelect={(slug) => { setSelectedSlug(slug); setMobileFilterOpen(false); }}
             />
           </ScrollArea>
         </SheetContent>
       </Sheet>
 
-      {/* Scroll to top */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed bottom-6 right-6 rounded-full shadow-lg bg-background/80 backdrop-blur-sm z-50"
+      {/* Scroll to top FAB */}
+      <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="fixed bottom-6 right-6 h-10 w-10 rounded-full border border-border bg-card/90 backdrop-blur-sm shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-card transition-all z-50 hover:-translate-y-0.5"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m18 15-6-6-6 6" />
         </svg>
-      </Button>
+      </button>
     </div>
   );
 };

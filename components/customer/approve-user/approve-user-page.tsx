@@ -100,17 +100,15 @@ export default function ApproveUserPage() {
     }
   }, [validationData, pollingEnabled, router])
 
-  // ── Handle poll errors ────────────────────────────────────────────────────────
+  // ── Poll errors ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!pollingEnabled || !validationError) return
     setPollingEnabled(false)
-    const msg =
-      validationError instanceof Error ? validationError.message.toLowerCase() : ""
+    const msg = validationError instanceof Error ? validationError.message.toLowerCase() : ""
     const isNetworkError =
       msg.includes("network") || msg.includes("fetch") ||
-      msg.includes("econnrefused") || msg.includes("timeout") ||
-      msg.includes("connection")
+      msg.includes("econnrefused") || msg.includes("timeout") || msg.includes("connection")
     if (isNetworkError) {
       setFormError("Connection lost. Please refresh and try again.")
       setPageState("idle")
@@ -130,7 +128,7 @@ export default function ApproveUserPage() {
     return () => { if (dotsRef.current) clearInterval(dotsRef.current) }
   }, [pageState])
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
+  // ── Helpers & handlers ────────────────────────────────────────────────────────
 
   const startPolling = (phone: string, table: number) => {
     writeStorage({ phone_number: phone, table_number: table })
@@ -140,8 +138,6 @@ export default function ApproveUserPage() {
     setPageState("waiting")
     setFormError("")
   }
-
-  // ── Handlers ──────────────────────────────────────────────────────────────────
 
   const handleSubmit = (resolvedPhone: string) => {
     if (!tableNumber) return setFormError("Please select a table.")
@@ -177,33 +173,63 @@ export default function ApproveUserPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0d0d0d] px-4 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-12">
 
-      {/* Ambient rings */}
+      {/* Layered ambient background glows */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--accent)/10%,transparent_65%)] blur-3xl" />
+        <div className="absolute -bottom-40 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--accent)/6%,transparent_70%)] blur-2xl" />
+        <div className="absolute top-1/2 -right-20 h-48 w-48 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,var(--accent)/5%,transparent_70%)] blur-2xl" />
+      </div>
+
+      {/* Decorative ambient rings */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        {[280, 420, 560, 700].map((size) => (
+        {[360, 520, 680, 840].map((size) => (
           <div
             key={size}
             style={{ width: size, height: size }}
-            className="absolute rounded-full border border-white/[0.04]"
+            className="absolute rounded-full border border-border/20"
           />
         ))}
       </div>
 
-      <div className="relative z-10 w-full max-w-[360px]">
+      {/* Subtle dot-grid texture */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: "radial-gradient(circle, var(--foreground) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-[400px]">
 
         {/* Brand mark */}
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-lg">
-            🍜
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute h-16 w-16 rounded-2xl border border-border/30 scale-110 opacity-60" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card shadow-md text-xl ring-1 ring-border/60">
+              🍜
+            </div>
           </div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/25">
-            Table service
-          </p>
+          <div className="flex flex-col items-center gap-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
+              Table Service
+            </p>
+            <div className="h-px w-10 bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+          </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-sm">
-          <div className="p-7">
+        {/* Main card */}
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
+
+          {/* Gold top line */}
+          <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+
+          {/* Card-corner glow */}
+          <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,var(--accent)/8%,transparent_70%)]" />
+
+          <div className="relative p-7">
 
             {/* ── IDLE ── */}
             {pageState === "idle" && (
@@ -217,11 +243,11 @@ export default function ApproveUserPage() {
                 tablesLoading={tablesLoading}
                 setTableNumber={setTableNumber}
                 onSubmit={handleSubmit}
-                submitLabel="Send request"
+                submitLabel="Send Request"
                 footer={
                   <button
                     onClick={() => { setFormError(""); setPageState("recover") }}
-                    className="mt-4 w-full text-center text-xs text-white/20 underline-offset-2 hover:text-white/45 hover:underline"
+                    className="mt-5 w-full text-center text-[11px] font-medium text-muted-foreground/50 underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
                   >
                     Already requested? Track your status →
                   </button>
@@ -232,7 +258,7 @@ export default function ApproveUserPage() {
             {/* ── RECOVER ── */}
             {pageState === "recover" && (
               <RecoverForm
-                title="Track your request"
+                title="Track Your Request"
                 subtitle="Re-enter the same details you used earlier to check your approval status."
                 phoneNumber={phoneNumber}
                 tableNumber={tableNumber}
@@ -240,11 +266,11 @@ export default function ApproveUserPage() {
                 setPhoneNumber={setPhoneNumber}
                 setTableNumber={setTableNumber}
                 onSubmit={handleRecover}
-                submitLabel="Check status"
+                submitLabel="Check Status"
                 footer={
                   <button
                     onClick={() => { setFormError(""); setPageState("idle") }}
-                    className="mt-4 w-full text-center text-xs text-white/20 underline-offset-2 hover:text-white/45 hover:underline"
+                    className="mt-5 w-full text-center text-[11px] font-medium text-muted-foreground/50 underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
                   >
                     ← Submit a new request instead
                   </button>
@@ -254,20 +280,21 @@ export default function ApproveUserPage() {
 
             {/* ── WAITING ── */}
             {pageState === "waiting" && (
-              <div className="flex flex-col items-center py-2 text-center">
+              <div className="flex flex-col items-center py-3 text-center">
                 <PulseRing />
-                <h2 className="mt-5 text-[15px] font-medium text-white/90">
+                <h2 className="mt-5 text-[15px] font-semibold tracking-tight text-foreground">
                   Waiting for approval{".".repeat(dots)}
                 </h2>
-                <p className="mt-1.5 text-xs text-white/30">
+                <p className="mt-1.5 text-[11px] text-muted-foreground/60">
                   Table {tableNumber} · {phoneNumber === DEFAULT_PHONE ? "Guest" : phoneNumber}
                 </p>
-                <p className="mt-4 max-w-[240px] text-xs leading-relaxed text-white/20">
+                <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground/60 max-w-[240px]">
+                  <span className="shrink-0 text-accent opacity-70">ℹ</span>
                   You can safely close this tab — your request will still be tracked when you return.
-                </p>
+                </div>
                 <button
                   onClick={handleReset}
-                  className="mt-6 text-xs text-white/15 underline-offset-2 hover:text-white/40 hover:underline"
+                  className="mt-6 text-[11px] font-medium text-muted-foreground/40 underline-offset-2 transition-colors hover:text-destructive hover:underline"
                 >
                   Cancel request
                 </button>
@@ -278,9 +305,10 @@ export default function ApproveUserPage() {
             {pageState === "approved" && (
               <StatusScreen
                 icon="✓"
-                iconClass="text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
-                title="You're approved!"
-                message="Taking you to the menu…"
+                iconClass="text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                outerRingClass="border-emerald-500/10"
+                title="You're Approved!"
+                message="Taking you to the menu in a moment…"
               />
             )}
 
@@ -288,20 +316,21 @@ export default function ApproveUserPage() {
             {pageState === "not_found" && (
               <StatusScreen
                 icon="?"
-                iconClass="text-amber-400 bg-amber-400/10 border-amber-400/20"
-                title="No such record exists"
+                iconClass="text-amber-500 bg-amber-500/10 border-amber-500/20"
+                outerRingClass="border-amber-500/10"
+                title="No Record Found"
                 message="We couldn't find a request matching these details. Check your phone number and table number, or submit a new request."
                 action={
-                  <div className="mt-5 flex flex-col gap-2">
+                  <div className="mt-5 flex w-full flex-col gap-2">
                     <button
                       onClick={() => { setFormError(""); setPageState("recover") }}
-                      className="rounded-lg border border-white/10 px-5 py-2 text-xs text-white/40 transition hover:border-white/20 hover:text-white/70"
+                      className="w-full rounded-xl border border-border bg-muted/30 px-5 py-2.5 text-[11px] font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground"
                     >
                       Try different details
                     </button>
                     <button
                       onClick={handleReset}
-                      className="text-xs text-white/15 underline-offset-2 hover:text-white/35 hover:underline"
+                      className="text-[11px] font-medium text-muted-foreground/40 underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
                     >
                       Submit a new request
                     </button>
@@ -311,14 +340,38 @@ export default function ApproveUserPage() {
             )}
 
           </div>
+
+          {/* Card footer strip */}
+          <div className="mx-7 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="flex items-center justify-between px-7 py-3.5">
+            <span className="text-[10px] tracking-[0.08em] text-muted-foreground/30 uppercase">Secure Session</span>
+            <span className="text-[10px] tracking-[0.06em] text-accent/40 uppercase">Table Service</span>
+          </div>
         </div>
+
+        {/* Page footer */}
+        <p className="mt-5 text-center text-[10px] tracking-wide text-muted-foreground/30">
+          Secure · Powered by Table Service
+        </p>
       </div>
     </div>
   )
 }
 
+// ─── Shared helpers ────────────────────────────────────────────────────────────
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.10em] text-muted-foreground/60">
+      {children}
+    </label>
+  )
+}
+
+const inputCls =
+  "h-9 w-full rounded-xl border border-border bg-muted/30 px-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-colors focus:border-ring/50 focus:bg-background focus:ring-1 focus:ring-ring/30"
+
 // ─── RequestForm ───────────────────────────────────────────────────────────────
-// Phone is optional. Table is shown first. User can expand phone via a nudge button.
 
 interface RequestFormProps {
   title: string
@@ -344,33 +397,47 @@ function RequestForm({
 
   return (
     <>
-      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
-      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
+      {/* Section header */}
+      <div className="mb-6">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="inline-block h-4 w-1 rounded-full bg-accent opacity-80" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-accent">
+            New Request
+          </span>
+        </div>
+        <h1 className="text-[17px] font-semibold tracking-tight text-foreground">{title}</h1>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground/70">{subtitle}</p>
+      </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="space-y-3">
 
-        {/* Table selector — always visible */}
+        {/* Table selector */}
         <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Table number
-          </label>
+          <FieldLabel>Table Number</FieldLabel>
           {tablesLoading ? (
-            <div className="h-10 animate-pulse rounded-lg bg-white/[0.04]" />
+            <div className="h-9 animate-pulse rounded-xl bg-muted" />
           ) : (
-            <select
-              value={tableNumber || ""}
-              onChange={(e) => setTableNumber(Number(e.target.value))}
-              className="w-full rounded-lg border border-white/[0.08] bg-[#1a1a1a] px-3 py-2.5 text-sm text-white/80 outline-none transition focus:border-white/20"
-            >
-              {emptyTables.length === 0 && (
-                <option value="">No tables available</option>
-              )}
-              {emptyTables.map((t) => (
-                <option key={t.id} value={t.table_number}>
-                  Table {t.table_number}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={tableNumber || ""}
+                onChange={(e) => setTableNumber(Number(e.target.value))}
+                className={inputCls}
+              >
+                {emptyTables.length === 0 && (
+                  <option value="">No tables available</option>
+                )}
+                {emptyTables.map((t) => (
+                  <option key={t.id} value={t.table_number}>
+                    Table {t.table_number}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
           )}
         </div>
 
@@ -379,27 +446,27 @@ function RequestForm({
           <button
             type="button"
             onClick={() => setPhoneEnabled(true)}
-            className="flex w-full items-center gap-2.5 rounded-lg border border-dashed border-white/[0.10] bg-white/[0.02] px-3 py-2.5 text-left transition hover:border-white/20 hover:bg-white/[0.05]"
+            className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-2.5 text-left transition-all hover:border-accent/40 hover:bg-muted/40"
           >
             <span className="text-base">🎁</span>
-            <span className="text-xs leading-snug text-white/35">
+            <span className="text-xs leading-snug text-muted-foreground/60">
               Add phone number to unlock{" "}
-              <span className="font-semibold text-amber-400/80">rewards &amp; discounts</span>
+              <span className="font-semibold text-accent/80">rewards &amp; discounts</span>
             </span>
-            <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/30">
+            <span className="ml-auto shrink-0 rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground/50">
               + Add
             </span>
           </button>
         ) : (
-          <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.04] p-3">
+          <div className="rounded-xl border border-accent/20 bg-accent/[0.04] p-3">
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-[11px] font-medium uppercase tracking-widest text-amber-400/60">
-                Phone number
+              <label className="text-[11px] font-semibold uppercase tracking-[0.10em] text-accent/70">
+                Phone Number
               </label>
               <button
                 type="button"
                 onClick={() => { setPhoneEnabled(false); setLocalPhone("") }}
-                className="text-[10px] text-white/20 hover:text-white/40"
+                className="text-[10px] text-muted-foreground/40 transition-colors hover:text-muted-foreground"
               >
                 ✕ Remove
               </button>
@@ -410,26 +477,34 @@ function RequestForm({
               value={localPhone}
               onChange={(e) => setLocalPhone(e.target.value)}
               placeholder="+1 555 000 0000"
-              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-amber-400/30 focus:bg-white/[0.07]"
+              className={inputCls}
             />
-            <p className="mt-1.5 text-[10px] text-white/20">
+            <p className="mt-1.5 text-[10px] text-muted-foreground/40">
               Used to track rewards. Optional — you can skip this.
             </p>
           </div>
         )}
 
+        {/* Error */}
         {formError && (
-          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            {formError}
-          </p>
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/[0.08] px-3 py-2">
+            <span className="shrink-0 text-[10px] text-destructive">⚠</span>
+            <p className="text-[11px] font-medium text-destructive">{formError}</p>
+          </div>
         )}
 
+        {/* Submit */}
         <button
           onClick={() => onSubmit(phoneEnabled ? localPhone : "")}
           disabled={isSubmitting || tablesLoading || emptyTables.length === 0}
-          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
+          className="mt-1 flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
         >
-          {isSubmitting ? "Please wait…" : submitLabel}
+          {isSubmitting ? (
+            <>
+              <span className="h-3.5 w-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+              Please wait…
+            </>
+          ) : submitLabel}
         </button>
       </div>
 
@@ -459,49 +534,56 @@ function RecoverForm({
 }: RecoverFormProps) {
   return (
     <>
-      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
-      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
+      {/* Section header */}
+      <div className="mb-6">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="inline-block h-4 w-1 rounded-full bg-accent opacity-80" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-accent">
+            Track Request
+          </span>
+        </div>
+        <h1 className="text-[17px] font-semibold tracking-tight text-foreground">{title}</h1>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground/70">{subtitle}</p>
+      </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="space-y-3">
         <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Phone number
-          </label>
+          <FieldLabel>Phone Number</FieldLabel>
           <input
             type="tel"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             placeholder="Leave blank if you didn't add one"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+            className={inputCls}
           />
-          <p className="mt-1 text-[10px] text-white/20">
+          <p className="mt-1 text-[10px] text-muted-foreground/40">
             Leave blank if you didn't add a phone number.
           </p>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Table number
-          </label>
+          <FieldLabel>Table Number</FieldLabel>
           <input
             type="number"
             min={1}
             value={tableNumber || ""}
             onChange={(e) => setTableNumber(Number(e.target.value))}
             placeholder="e.g. 4"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+            className={inputCls}
           />
         </div>
 
+        {/* Error */}
         {formError && (
-          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            {formError}
-          </p>
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/[0.08] px-3 py-2">
+            <span className="shrink-0 text-[10px] text-destructive">⚠</span>
+            <p className="text-[11px] font-medium text-destructive">{formError}</p>
+          </div>
         )}
 
         <button
           onClick={() => onSubmit(phoneNumber)}
-          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
+          className="mt-1 flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
         >
           {submitLabel}
         </button>
@@ -512,37 +594,42 @@ function RecoverForm({
   )
 }
 
-// ─── Shared sub-components ─────────────────────────────────────────────────────
+// ─── PulseRing ─────────────────────────────────────────────────────────────────
 
 function PulseRing() {
   return (
     <div className="relative flex h-16 w-16 items-center justify-center">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/10" />
-      <span className="relative flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent/10" />
+      <span className="absolute h-14 w-14 rounded-full border border-accent/20 bg-accent/5" />
+      <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card shadow-sm ring-1 ring-border/50 text-lg">
         🍜
       </span>
     </div>
   )
 }
 
+// ─── StatusScreen ──────────────────────────────────────────────────────────────
+
 interface StatusScreenProps {
   icon: string
   iconClass: string
+  outerRingClass: string
   title: string
   message: string
   action?: React.ReactNode
 }
 
-function StatusScreen({ icon, iconClass, title, message, action }: StatusScreenProps) {
+function StatusScreen({ icon, iconClass, outerRingClass, title, message, action }: StatusScreenProps) {
   return (
-    <div className="flex flex-col items-center py-2 text-center">
-      <div
-        className={`flex h-12 w-12 items-center justify-center rounded-full border text-lg font-semibold ${iconClass}`}
-      >
-        {icon}
+    <div className="flex flex-col items-center py-3 text-center">
+      <div className="relative flex items-center justify-center">
+        <div className={`absolute h-20 w-20 rounded-full border scale-110 ${outerRingClass}`} />
+        <div className={`relative flex h-14 w-14 items-center justify-center rounded-3xl border text-lg font-semibold shadow-sm ${iconClass}`}>
+          {icon}
+        </div>
       </div>
-      <h2 className="mt-4 text-[15px] font-medium text-white/90">{title}</h2>
-      <p className="mt-2 max-w-[260px] text-xs leading-relaxed text-white/30">{message}</p>
+      <h2 className="mt-5 text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
+      <p className="mt-1.5 max-w-[260px] text-[11px] leading-relaxed text-muted-foreground">{message}</p>
       {action}
     </div>
   )

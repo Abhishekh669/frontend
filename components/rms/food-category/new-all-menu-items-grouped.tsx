@@ -224,7 +224,7 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground -mx-8 -mt-8">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="py-4 space-y-5">
 
         {/* ── Hero card ──────────────────────────────────────────────────── */}
