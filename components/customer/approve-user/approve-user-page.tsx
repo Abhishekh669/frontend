@@ -15,6 +15,8 @@ export interface SessionCheckDataType {
 
 type PageState = "idle" | "recover" | "waiting" | "approved" | "not_found"
 
+const DEFAULT_PHONE = "9800000000"
+
 // ─── localStorage helpers ───────────────────────────────────────────────────────
 
 const LS_KEY = "session-check"
@@ -45,7 +47,7 @@ export default function ApproveUserPage() {
   const router = useRouter()
 
   const [phoneNumber, setPhoneNumber] = useState<string>("")
-  const [tableNumber, setTableNumber] = useState<number>(0) // 0 = not yet set
+  const [tableNumber, setTableNumber] = useState<number>(0)
   const [pageState, setPageState] = useState<PageState>("idle")
   const [pollingEnabled, setPollingEnabled] = useState<boolean>(false)
   const [formError, setFormError] = useState("")
@@ -59,14 +61,10 @@ export default function ApproveUserPage() {
 
   const { mutate: createApprovalRequest, isPending: isSubmitting } = useCreateApprovalRequest()
 
-  const {
-    data: validationData,
-    error: validationError,
-  } = useGetTableValidationFromPhoneNTable(phoneNumber, tableNumber, pollingEnabled)
+  const { data: validationData, error: validationError } =
+    useGetTableValidationFromPhoneNTable(phoneNumber, tableNumber, pollingEnabled)
 
   // ── Sync tableNumber to first available empty table ───────────────────────────
-  // Fires after tables load. Only sets if tableNumber is still 0 (not yet chosen
-  // or just reset) and we are on a form screen (not mid-poll or approved).
 
   useEffect(() => {
     if (
@@ -78,7 +76,7 @@ export default function ApproveUserPage() {
     }
   }, [emptyTables, tableNumber, pageState])
 
-  // ── Hydration effect — runs once after mount, client-only ─────────────────────
+  // ── Hydration ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const stored = readStorage()
@@ -89,43 +87,30 @@ export default function ApproveUserPage() {
     setPollingEnabled(true)
   }, [])
 
-  // ── Handle successful poll response ──────────────────────────────────────────
+  // ── Handle successful poll ────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!pollingEnabled || !validationData) return
-
     const status = validationData.status as "approved" | "not_approved" | "pending"
-
     if (status === "approved") {
       setPollingEnabled(false)
       clearStorage()
       setPageState("approved")
       setTimeout(() => router.push("/menu-items"), 1200)
-      return
     }
-
-    // "not_approved" or "pending" → keep polling, do nothing
   }, [validationData, pollingEnabled, router])
 
   // ── Handle poll errors ────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!pollingEnabled || !validationError) return
-
     setPollingEnabled(false)
-
     const msg =
-      validationError instanceof Error
-        ? validationError.message.toLowerCase()
-        : ""
-
+      validationError instanceof Error ? validationError.message.toLowerCase() : ""
     const isNetworkError =
-      msg.includes("network") ||
-      msg.includes("fetch") ||
-      msg.includes("econnrefused") ||
-      msg.includes("timeout") ||
+      msg.includes("network") || msg.includes("fetch") ||
+      msg.includes("econnrefused") || msg.includes("timeout") ||
       msg.includes("connection")
-
     if (isNetworkError) {
       setFormError("Connection lost. Please refresh and try again.")
       setPageState("idle")
@@ -142,9 +127,7 @@ export default function ApproveUserPage() {
     } else {
       if (dotsRef.current) clearInterval(dotsRef.current)
     }
-    return () => {
-      if (dotsRef.current) clearInterval(dotsRef.current)
-    }
+    return () => { if (dotsRef.current) clearInterval(dotsRef.current) }
   }, [pageState])
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -160,14 +143,14 @@ export default function ApproveUserPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
 
-  const handleSubmit = () => {
-    if (!phoneNumber.trim()) return setFormError("Phone number is required.")
+  const handleSubmit = (resolvedPhone: string) => {
     if (!tableNumber) return setFormError("Please select a table.")
     setFormError("")
+    const phone = resolvedPhone.trim() || DEFAULT_PHONE
     createApprovalRequest(
-      { phone_number: phoneNumber.trim(), table_number: tableNumber },
+      { phone_number: phone, table_number: tableNumber },
       {
-        onSuccess: () => startPolling(phoneNumber.trim(), tableNumber),
+        onSuccess: () => startPolling(phone, tableNumber),
         onError: (err: unknown) => {
           setFormError(err instanceof Error ? err.message : "Failed to send request.")
         },
@@ -175,18 +158,18 @@ export default function ApproveUserPage() {
     )
   }
 
-  const handleRecover = () => {
-    if (!phoneNumber.trim()) return setFormError("Phone number is required.")
+  const handleRecover = (resolvedPhone: string) => {
     if (!tableNumber) return setFormError("Please select a table.")
     setFormError("")
-    startPolling(phoneNumber.trim(), tableNumber)
+    const phone = resolvedPhone.trim() || DEFAULT_PHONE
+    startPolling(phone, tableNumber)
   }
 
   const handleReset = () => {
     setPollingEnabled(false)
     clearStorage()
     setPhoneNumber("")
-    setTableNumber(0) // reset to 0 so sync effect re-picks first empty table
+    setTableNumber(0)
     setFormError("")
     setPageState("idle")
   }
@@ -227,13 +210,11 @@ export default function ApproveUserPage() {
               <RequestForm
                 title="Request approval"
                 subtitle="A waiter will confirm your table before you order."
-                phoneNumber={phoneNumber}
                 tableNumber={tableNumber}
                 formError={formError}
                 isSubmitting={isSubmitting}
                 emptyTables={emptyTables}
                 tablesLoading={tablesLoading}
-                setPhoneNumber={setPhoneNumber}
                 setTableNumber={setTableNumber}
                 onSubmit={handleSubmit}
                 submitLabel="Send request"
@@ -247,6 +228,8 @@ export default function ApproveUserPage() {
                 }
               />
             )}
+
+            {/* ── RECOVER ── */}
             {pageState === "recover" && (
               <RecoverForm
                 title="Track your request"
@@ -268,6 +251,7 @@ export default function ApproveUserPage() {
                 }
               />
             )}
+
             {/* ── WAITING ── */}
             {pageState === "waiting" && (
               <div className="flex flex-col items-center py-2 text-center">
@@ -276,7 +260,7 @@ export default function ApproveUserPage() {
                   Waiting for approval{".".repeat(dots)}
                 </h2>
                 <p className="mt-1.5 text-xs text-white/30">
-                  Table {tableNumber} · {phoneNumber}
+                  Table {tableNumber} · {phoneNumber === DEFAULT_PHONE ? "Guest" : phoneNumber}
                 </p>
                 <p className="mt-4 max-w-[240px] text-xs leading-relaxed text-white/20">
                   You can safely close this tab — your request will still be tracked when you return.
@@ -333,119 +317,39 @@ export default function ApproveUserPage() {
   )
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── RequestForm ───────────────────────────────────────────────────────────────
+// Phone is optional. Table is shown first. User can expand phone via a nudge button.
 
 interface RequestFormProps {
   title: string
   subtitle: string
-  phoneNumber: string
   tableNumber: number
   formError: string
   isSubmitting: boolean
   emptyTables: { table_number: number; id: string }[]
   tablesLoading: boolean
-  setPhoneNumber: (v: string) => void
   setTableNumber: (v: number) => void
-  onSubmit: () => void
+  onSubmit: (phone: string) => void
   submitLabel: string
   footer?: React.ReactNode
 }
-
-
-interface RecoverFormProps {
-  title: string
-  subtitle: string
-  phoneNumber: string
-  tableNumber: number
-  formError: string
-  setPhoneNumber: (v: string) => void
-  setTableNumber: (v: number) => void
-  onSubmit: () => void
-  submitLabel: string
-  footer?: React.ReactNode
-}
-
-function RecoverForm({
-  title, subtitle, phoneNumber, tableNumber, formError,
-  setPhoneNumber, setTableNumber, onSubmit, submitLabel, footer,
-}: RecoverFormProps) {
-  return (
-    <>
-      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
-      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
-
-      <div className="mt-6 space-y-3">
-        <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Phone number
-          </label>
-          <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="+1 555 000 0000"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Table number
-          </label>
-          <input
-            type="number"
-            min={1}
-            value={tableNumber || ""}
-            onChange={(e) => setTableNumber(Number(e.target.value))}
-            placeholder="e.g. 4"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
-          />
-        </div>
-
-        {formError && (
-          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            {formError}
-          </p>
-        )}
-
-        <button
-          onClick={onSubmit}
-          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
-        >
-          {submitLabel}
-        </button>
-      </div>
-
-      {footer}
-    </>
-  )
-}
-
 
 function RequestForm({
-  title, subtitle, phoneNumber, tableNumber, formError,
+  title, subtitle, tableNumber, formError,
   isSubmitting, emptyTables, tablesLoading,
-  setPhoneNumber, setTableNumber, onSubmit, submitLabel, footer,
+  setTableNumber, onSubmit, submitLabel, footer,
 }: RequestFormProps) {
+  const [phoneEnabled, setPhoneEnabled] = useState(false)
+  const [localPhone, setLocalPhone] = useState("")
+
   return (
     <>
       <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
       <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
 
       <div className="mt-6 space-y-3">
-        <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
-            Phone number
-          </label>
-          <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="+1 555 000 0000"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
-          />
-        </div>
 
+        {/* Table selector — always visible */}
         <div>
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
             Table number
@@ -470,6 +374,50 @@ function RequestForm({
           )}
         </div>
 
+        {/* Phone — optional, toggled by nudge button */}
+        {!phoneEnabled ? (
+          <button
+            type="button"
+            onClick={() => setPhoneEnabled(true)}
+            className="flex w-full items-center gap-2.5 rounded-lg border border-dashed border-white/[0.10] bg-white/[0.02] px-3 py-2.5 text-left transition hover:border-white/20 hover:bg-white/[0.05]"
+          >
+            <span className="text-base">🎁</span>
+            <span className="text-xs leading-snug text-white/35">
+              Add phone number to unlock{" "}
+              <span className="font-semibold text-amber-400/80">rewards &amp; discounts</span>
+            </span>
+            <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/30">
+              + Add
+            </span>
+          </button>
+        ) : (
+          <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.04] p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-[11px] font-medium uppercase tracking-widest text-amber-400/60">
+                Phone number
+              </label>
+              <button
+                type="button"
+                onClick={() => { setPhoneEnabled(false); setLocalPhone("") }}
+                className="text-[10px] text-white/20 hover:text-white/40"
+              >
+                ✕ Remove
+              </button>
+            </div>
+            <input
+              type="tel"
+              autoFocus
+              value={localPhone}
+              onChange={(e) => setLocalPhone(e.target.value)}
+              placeholder="+1 555 000 0000"
+              className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-amber-400/30 focus:bg-white/[0.07]"
+            />
+            <p className="mt-1.5 text-[10px] text-white/20">
+              Used to track rewards. Optional — you can skip this.
+            </p>
+          </div>
+        )}
+
         {formError && (
           <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
             {formError}
@@ -477,7 +425,7 @@ function RequestForm({
         )}
 
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit(phoneEnabled ? localPhone : "")}
           disabled={isSubmitting || tablesLoading || emptyTables.length === 0}
           className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
         >
@@ -489,6 +437,82 @@ function RequestForm({
     </>
   )
 }
+
+// ─── RecoverForm ───────────────────────────────────────────────────────────────
+
+interface RecoverFormProps {
+  title: string
+  subtitle: string
+  phoneNumber: string
+  tableNumber: number
+  formError: string
+  setPhoneNumber: (v: string) => void
+  setTableNumber: (v: number) => void
+  onSubmit: (phone: string) => void
+  submitLabel: string
+  footer?: React.ReactNode
+}
+
+function RecoverForm({
+  title, subtitle, phoneNumber, tableNumber, formError,
+  setPhoneNumber, setTableNumber, onSubmit, submitLabel, footer,
+}: RecoverFormProps) {
+  return (
+    <>
+      <h1 className="text-[17px] font-semibold text-white/90">{title}</h1>
+      <p className="mt-1 text-xs leading-relaxed text-white/30">{subtitle}</p>
+
+      <div className="mt-6 space-y-3">
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Phone number
+          </label>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="Leave blank if you didn't add one"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+          <p className="mt-1 text-[10px] text-white/20">
+            Leave blank if you didn't add a phone number.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-white/25">
+            Table number
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={tableNumber || ""}
+            onChange={(e) => setTableNumber(Number(e.target.value))}
+            placeholder="e.g. 4"
+            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white/80 placeholder-white/15 outline-none transition focus:border-white/20 focus:bg-white/[0.07]"
+          />
+        </div>
+
+        {formError && (
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {formError}
+          </p>
+        )}
+
+        <button
+          onClick={() => onSubmit(phoneNumber)}
+          className="mt-1 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-40"
+        >
+          {submitLabel}
+        </button>
+      </div>
+
+      {footer}
+    </>
+  )
+}
+
+// ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function PulseRing() {
   return (

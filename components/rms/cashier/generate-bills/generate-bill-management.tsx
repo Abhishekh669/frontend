@@ -1,9 +1,15 @@
 "use client"
 import { createPayment } from '@/utils/actions/payment/payment.post';
 import { useGetOrderDetailsForCashierById } from '@/utils/hooks/tanstack-query/query-hook/payment/use-get-order-details-by-order-id';
-import { CreatePayment, PaymentMethod, OnlineGateway } from '@/utils/types/payment.types';
-import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import {
+  CreatePayment,
+  PaymentMethod,
+  OnlineGateway,
+  PaymentDetailsForCashierWithDiscount,
+  OrderItemType,
+} from '@/utils/types/payment.types';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -36,114 +42,124 @@ const STATUS_DOT: Record<string, string> = {
 function GenerateBillsManagementPage() {
   const params   = useSearchParams();
   const order_id = params.get('id');
-  if (!order_id) return null;
+  const router = useRouter();
+  const printRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, isError } = useGetOrderDetailsForCashierById(order_id);
-  const [paying, setPaying] = useState(false);
+  const { data, isLoading, isError } = useGetOrderDetailsForCashierById(order_id ?? '');
+
+  const [paying, setPaying]                     = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
-  // Payment form state
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
-  const [onlineGateway, setOnlineGateway] = useState<OnlineGateway>("esewa");
-  const [manualDiscount, setManualDiscount] = useState<number>(0);
-  const [discountError, setDiscountError] = useState<string>("");
-  const [applyVAT, setApplyVAT] = useState<boolean>(true); // VAT toggle
+  const [paymentMethod, setPaymentMethod]       = useState<PaymentMethod>(PaymentMethod.Cash);
+  const [onlineGateway, setOnlineGateway]       = useState<OnlineGateway>(OnlineGateway.Esewa);
+  const [manualDiscount, setManualDiscount]     = useState<number>(0);
+  const [discountError, setDiscountError]       = useState<string>('');
+  const [applyVAT, setApplyVAT]                 = useState<boolean>(false);
 
-  if (isLoading) return <BillSkeleton />;
-  if (isError || !data?.order) return <ErrorState />;
+  const order = data?.order as PaymentDetailsForCashierWithDiscount | undefined;
 
-  const order = data.order;
-  const subtotal = order.order_menu_items.reduce((s: number, i: any) => s + i.price * i.quantity, 0);
+  const subtotal = order?.order_menu_items?.reduce(
+    (s, i) => s + i.price * i.quantity, 0
+  ) ?? 0;
+
   const tax = applyVAT ? subtotal * 0.13 : 0;
-  
-  // Calculate token discount (max 5% of subtotal or available tokens)
-  const maxTokenDiscount = subtotal * 0.05;
-  const tokenDiscount = order.token ? Math.min(order.token.total_tokens, maxTokenDiscount) : 0;
-  
-  // Total after token discount and VAT
+
+  const totalTokens   = order?.token_details?.token_details?.total_tokens ?? 0;
+  const tokenDiscount = order?.token_details?.discount || 0;
+
   const totalAfterTokenDiscount = subtotal + tax - tokenDiscount;
-  
-  // Validate manual discount
+
   const validateDiscount = (value: number): string => {
-    if (value < 0) return "Discount cannot be negative";
-    if (value > totalAfterTokenDiscount) {
+    if (value < 0) return 'Discount cannot be negative';
+    if (value > totalAfterTokenDiscount)
       return `Discount cannot exceed total amount (${fmt(totalAfterTokenDiscount)})`;
-    }
-    return "";
+    return '';
   };
 
-  // Handle manual discount change
   const handleManualDiscountChange = (value: number) => {
     const error = validateDiscount(value);
     setDiscountError(error);
-    if (!error) {
-      setManualDiscount(value);
-    } else {
-      setManualDiscount(Math.min(value, totalAfterTokenDiscount));
-    }
+    setManualDiscount(error ? Math.min(value, totalAfterTokenDiscount) : value);
   };
 
-  // Reset discount when modal opens or total changes
   useEffect(() => {
     if (showPaymentModal) {
       setManualDiscount(0);
-      setDiscountError("");
+      setDiscountError('');
     }
   }, [showPaymentModal, totalAfterTokenDiscount]);
 
-  // Final payable amount
-  const finalPayable = totalAfterTokenDiscount - manualDiscount;
+  const finalPayable  = totalAfterTokenDiscount - manualDiscount;
+  const totalDiscount = tokenDiscount + manualDiscount;
 
-  const chipStyle = STATUS_STYLES[order.status] ?? STATUS_STYLES['not-approved'];
-  const dotStyle  = STATUS_DOT[order.status]    ?? STATUS_DOT['not-approved'];
+  const handlePrint = () => {
+    if (printRef.current) {
+      const printContent = printRef.current.innerHTML;
+      const originalContent = document.body.innerHTML;
+      
+      document.body.innerHTML = printContent;
+      window.print();
+      document.body.innerHTML = originalContent;
+      window.location.reload();
+    }
+  };
 
   const handlePayment = async () => {
-    // Validate discount before processing
     const validationError = validateDiscount(manualDiscount);
-    if (validationError) {
-      setDiscountError(validationError);
-      return;
+    if (validationError) { 
+      setDiscountError(validationError); 
+      return; 
     }
 
     setPaying(true);
-    
-    // Create payment object based on CreatePayment type
+
     const paymentData: CreatePayment = {
-      order_id: order.order_id,
+      order_id:       order?.order_id || '',
       payment_method: paymentMethod,
-      paid_amount: finalPayable,
-      discount: tokenDiscount + manualDiscount, // Total discount (token + manual)
+      paid_amount:    finalPayable,
     };
-    
-    // Add online_gateway only if payment method is online
-    if (paymentMethod === "online") {
+
+    if (paymentMethod === PaymentMethod.Online) {
       paymentData.online_gateway = onlineGateway;
     }
-    
+
     try {
-      console.log("Processing payment:", paymentData);
       const res = await createPayment(paymentData);
-      if(!res.success){
-        toast.error(res.error || "failed to create payment");
+      if (!res.success) {
+        toast.error(res.error || 'Failed to create payment');
+        setPaying(false);
         return;
       }
+      toast.success('Payment processed successfully!');
       setShowPaymentModal(false);
-      // Reset form
-      setPaymentMethod("cash");
-      setOnlineGateway("esewa");
+      setPaymentMethod(PaymentMethod.Cash);
+      setOnlineGateway(OnlineGateway.Esewa);
       setManualDiscount(0);
-      setDiscountError("");
-      
+      setDiscountError('');
+      // Close modal and refresh or redirect
+      setTimeout(() => {
+        router.replace("/cashier")
+      }, 1500);
     } catch (error) {
-      console.error("Payment failed:", error);
-    } finally {
+      console.error('Payment failed:', error);
+      toast.error('An unexpected error occurred');
       setPaying(false);
     }
   };
 
+  if (!order_id)         return null;
+  if (isLoading)         return <BillSkeleton />;
+  if (isError || !order) return <ErrorState />;
+
+  const chipStyle = STATUS_STYLES[order.status] ?? STATUS_STYLES['not-approved'];
+  const dotStyle  = STATUS_DOT[order.status]    ?? STATUS_DOT['not-approved'];
+
+  const streak      = order.token_details?.current_streak ?? 0;
+  const monthlyDays = order.token_details?.monthly_days   ?? 0;
+  const lastVisit   = order.token_details?.last_visit;
+
   return (
     <>
-      {/* ── print styles: only show #print-bill, no scroll, fits one page ── */}
+      {/* ── print styles ── */}
       <style>{`
         @media print {
           body * { visibility: hidden !important; }
@@ -151,7 +167,7 @@ function GenerateBillsManagementPage() {
           #print-bill {
             position: fixed !important;
             top: 0 !important; left: 0 !important;
-            width: 100vw !important;
+            width: 100% !important;
             height: auto !important;
             overflow: visible !important;
             display: block !important;
@@ -165,28 +181,29 @@ function GenerateBillsManagementPage() {
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
+            padding: 16px !important;
           }
-          @page { size: 80mm auto; margin: 6mm; }
-        }
-        @media screen {
-          #print-bill { display: flex; align-items: flex-start; justify-content: center; }
+          @page { 
+            size: 80mm auto; 
+            margin: 6mm;
+          }
         }
       `}</style>
 
       <div className="min-h-screen bg-stone-100 font-sans text-stone-800">
-
-        {/* ── SCREEN LAYOUT: split left / right ── */}
         <div className="flex flex-col lg:flex-row min-h-screen">
 
-          {/* ══ LEFT: Full detail preview ══ */}
+          {/* ══ LEFT ══ */}
           <div className="flex-1 p-4 md:p-8 overflow-y-auto">
             <div className="max-w-2xl mx-auto">
 
-              {/* header */}
+              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Bill Summary</h1>
-                  <p className="text-xs text-stone-400 font-mono mt-0.5">{fmtDate(order.created_at)}</p>
+                  <p className="text-xs text-stone-400 font-mono mt-0.5">
+                    {fmtDate(order.order_menu_items?.[0]?.created_at ?? new Date().toISOString())}
+                  </p>
                 </div>
                 <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide ${chipStyle}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
@@ -194,7 +211,7 @@ function GenerateBillsManagementPage() {
                 </span>
               </div>
 
-              {/* VAT Toggle Card */}
+              {/* VAT Toggle */}
               <div className="bg-white border border-stone-200 rounded-xl p-4 mb-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -205,21 +222,14 @@ function GenerateBillsManagementPage() {
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={applyVAT}
-                      onChange={(e) => setApplyVAT(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                    <span className="ms-3 text-sm font-medium text-stone-700">
-                      {applyVAT ? 'VAT Applied' : 'VAT Exempt'}
-                    </span>
+                    <input type="checkbox" checked={applyVAT} onChange={e => setApplyVAT(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+                    <span className="ms-3 text-sm font-medium text-stone-700">{applyVAT ? 'VAT Applied' : 'VAT Exempt'}</span>
                   </label>
                 </div>
               </div>
 
-              {/* meta cards */}
+              {/* Meta cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {[
                   { label: 'Table',    value: `#${order.table_number}` },
@@ -234,18 +244,18 @@ function GenerateBillsManagementPage() {
                 ))}
               </div>
 
-              {/* items table */}
+              {/* Items table */}
               <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden mb-4">
                 <div className="px-5 py-3 border-b border-stone-100 bg-stone-50">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-amber-700">
-                    Order Items ({order.order_menu_items.length})
+                    Order Items ({order.order_menu_items?.length ?? 0})
                   </p>
                 </div>
                 <div className="grid grid-cols-[1fr_48px_80px_96px] px-5 py-2 border-b border-stone-100 text-[10px] uppercase tracking-widest text-stone-400 font-semibold">
                   <span>Item</span><span className="text-center">Qty</span>
                   <span className="text-right">Unit</span><span className="text-right">Total</span>
                 </div>
-                {order.order_menu_items.map((item: any) => (
+                {(order.order_menu_items ?? []).map((item: OrderItemType) => (
                   <div key={item.id} className="grid grid-cols-[1fr_48px_80px_96px] px-5 py-3 border-b border-stone-100 last:border-none hover:bg-stone-50 transition-colors items-center">
                     <div>
                       <p className="text-sm font-medium text-stone-800">{item.menu_name}</p>
@@ -258,7 +268,7 @@ function GenerateBillsManagementPage() {
                 ))}
               </div>
 
-              {/* totals */}
+              {/* Totals */}
               <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-5 mb-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-stone-500 font-mono">
@@ -273,7 +283,7 @@ function GenerateBillsManagementPage() {
                     <div className="flex justify-between text-sm text-emerald-600 font-mono">
                       <div className="flex items-center gap-1">
                         <span>🪙 Token Discount</span>
-                        <span className="text-xs text-stone-400">({order.token?.total_tokens || 0} pts available)</span>
+                        <span className="text-xs text-stone-400">({totalTokens.toFixed(2)} pts)</span>
                       </div>
                       <span>−{fmt(tokenDiscount)}</span>
                     </div>
@@ -289,15 +299,15 @@ function GenerateBillsManagementPage() {
                   <span className="text-base font-bold text-stone-900">Grand Total</span>
                   <span className="text-2xl font-bold text-amber-700 font-mono">{fmt(finalPayable)}</span>
                 </div>
-                {(tokenDiscount + manualDiscount) > 0 && (
+                {totalDiscount > 0 && (
                   <p className="text-xs text-center text-emerald-600 mt-2">
-                    Total savings: {fmt(tokenDiscount + manualDiscount)}
+                    Total savings: {fmt(totalDiscount)}
                   </p>
                 )}
               </div>
 
-              {/* waiter + token */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              {/* Waiter + Tokens + Streak - Always show with 0 values */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                 <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
                     {order.waiter_image
@@ -310,23 +320,42 @@ function GenerateBillsManagementPage() {
                     <p className="text-sm font-semibold text-stone-800 truncate">{order.waiter_name}</p>
                   </div>
                 </div>
-                <div className={`bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3 ${!order.token ? 'opacity-40' : ''}`}>
+
+                <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
                   <div className="text-2xl">🪙</div>
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Loyalty Tokens</p>
                     <p className="text-sm font-semibold text-stone-800">
-                      {order.token ? `${order.token.total_tokens.toFixed(2)} pts` : 'No tokens'}
+                      {totalTokens > 0 ? `${totalTokens.toFixed(2)} pts` : '0 pts'}
                     </p>
-                    {order.token && tokenDiscount > 0 && (
+                    {tokenDiscount > 0 && (
                       <p className="text-[10px] text-emerald-600 mt-0.5">
-                        Auto-applied: {fmt(tokenDiscount)}
+                        Discount: {fmt(tokenDiscount)} (max 5%)
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
+                  <div className="text-2xl">🔥</div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Visit Streak</p>
+                    <p className="text-sm font-semibold text-stone-800">
+                      {streak > 0 ? `${streak} day streak` : '0 day streak'}
+                    </p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      {monthlyDays > 0 ? `${monthlyDays} days this month` : '0 days this month'}
+                    </p>
+                    {lastVisit && (
+                      <p className="text-[10px] text-stone-400">
+                        Last: {new Date(lastVisit).toLocaleDateString('en-NP', { month: 'short', day: 'numeric' })}
                       </p>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* restaurant strip */}
+              {/* Restaurant strip */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">S</div>
                 <div>
@@ -335,10 +364,10 @@ function GenerateBillsManagementPage() {
                 </div>
               </div>
 
-              {/* action buttons */}
+              {/* Action buttons */}
               <div className="flex gap-3">
                 <button
-                  onClick={() => window.print()}
+                  onClick={handlePrint}
                   className="flex-1 flex items-center justify-center gap-2 bg-stone-800 hover:bg-stone-900 text-white text-sm font-semibold py-3.5 rounded-xl transition-all active:scale-95"
                 >
                   🖨️ Print Bill
@@ -354,30 +383,32 @@ function GenerateBillsManagementPage() {
             </div>
           </div>
 
-          {/* ══ RIGHT: Print preview panel (screen only) ══ */}
-          <div className="hidden lg:flex w-[320px] shrink-0 bg-stone-200 border-l border-stone-300 flex-col">
+          {/* ══ RIGHT: Print preview - Only visible on desktop ══ */}
+          <div id="print-bill" ref={printRef} className="hidden lg:flex w-[320px] shrink-0 bg-stone-200 border-l border-stone-300 flex-col">
             <div className="px-5 py-4 border-b border-stone-300 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-stone-700 uppercase tracking-widest">Print Preview</p>
                 <p className="text-[10px] text-stone-400 mt-0.5">80mm thermal receipt</p>
               </div>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="text-xs bg-stone-800 text-white px-3 py-1.5 rounded-lg hover:bg-stone-900 transition-all active:scale-95 font-semibold"
               >
                 🖨️ Print
               </button>
             </div>
-            {/* scrollable preview area */}
             <div className="flex-1 overflow-y-auto p-5 flex justify-center">
-              <ReceiptPreview 
-                order={order} 
-                subtotal={subtotal} 
-                tax={tax} 
-                tokenDisc={tokenDiscount} 
+              <ReceiptPreview
+                order={order}
+                subtotal={subtotal}
+                tax={tax}
+                tokenDisc={tokenDiscount}
                 manualDisc={manualDiscount}
                 total={finalPayable}
                 applyVAT={applyVAT}
+                streak={streak}
+                monthlyDays={monthlyDays}
+                totalTokens={totalTokens}
               />
             </div>
           </div>
@@ -385,17 +416,24 @@ function GenerateBillsManagementPage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
+      {/* ══ Payment Modal - Single confirmation ══ */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => !paying && setShowPaymentModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => !paying && setShowPaymentModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-stone-200">
               <h2 className="text-xl font-bold text-stone-900">Payment Details</h2>
-              <p className="text-sm text-stone-500 mt-1">Complete the payment to finalize the bill</p>
+              <p className="text-sm text-stone-500 mt-1">Complete the payment to finalise the bill</p>
             </div>
-            
+
             <div className="p-6 space-y-5">
-              {/* VAT Toggle in Modal */}
+
+              {/* VAT Toggle */}
               <div className="bg-stone-50 rounded-xl p-3 border border-stone-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -403,34 +441,55 @@ function GenerateBillsManagementPage() {
                     {applyVAT && <span className="text-xs text-emerald-600">✓ Applied</span>}
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={applyVAT}
-                      onChange={(e) => setApplyVAT(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    <input type="checkbox" checked={applyVAT} onChange={e => setApplyVAT(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
                   </label>
                 </div>
               </div>
 
-              {/* Total Amount Display */}
-              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                <p className="text-sm text-stone-600 mb-1">Total Amount</p>
-                <p className="text-2xl font-bold text-amber-700">{fmt(totalAfterTokenDiscount)}</p>
+              {/* Streak & Token banner - Always show with values */}
+              <div className="bg-gradient-to-r from-amber-50 to-emerald-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-stone-600 uppercase tracking-widest mb-3">Customer Loyalty</p>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-amber-600">{totalTokens.toFixed(0)}</p>
+                    <p className="text-[10px] text-stone-500">Total Tokens</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-orange-500">{streak}</p>
+                    <p className="text-[10px] text-stone-500">Day Streak 🔥</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-emerald-600">{monthlyDays}</p>
+                    <p className="text-[10px] text-stone-500">Monthly Days</p>
+                  </div>
+                </div>
                 {tokenDiscount > 0 && (
-                  <p className="text-xs text-emerald-600 mt-1">
-                    Includes {fmt(tokenDiscount)} token discount
-                  </p>
-                )}
-                {!applyVAT && (
-                  <p className="text-xs text-stone-500 mt-1">
-                    VAT exempted
-                  </p>
+                  <div className="bg-emerald-100 rounded-lg px-3 py-1.5 text-center mt-3">
+                    <p className="text-xs text-emerald-700 font-semibold">
+                      🪙 Token discount of {fmt(tokenDiscount)} auto-applied (max 5% of subtotal)
+                    </p>
+                  </div>
                 )}
               </div>
-              
-              {/* Discount Input */}
+
+              {/* Amount display */}
+              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                <p className="text-sm text-stone-600 mb-1">Amount Before Additional Discount</p>
+                <p className="text-2xl font-bold text-amber-700">{fmt(totalAfterTokenDiscount)}</p>
+                <div className="mt-2 space-y-1 text-xs text-stone-500">
+                  <div className="flex justify-between"><span>Subtotal</span><span className="font-mono">{fmt(subtotal)}</span></div>
+                  {applyVAT && <div className="flex justify-between"><span>VAT (13%)</span><span className="font-mono">{fmt(tax)}</span></div>}
+                  {tokenDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>🪙 Token discount ({totalTokens.toFixed(2)} pts)</span>
+                      <span className="font-mono">−{fmt(tokenDiscount)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Discount input */}
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">
                   Additional Discount
@@ -439,7 +498,7 @@ function GenerateBillsManagementPage() {
                 <input
                   type="number"
                   value={manualDiscount}
-                  onChange={(e) => handleManualDiscountChange(Number(e.target.value))}
+                  onChange={e => handleManualDiscountChange(Number(e.target.value))}
                   className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                     discountError ? 'border-red-500 bg-red-50' : 'border-stone-300'
                   }`}
@@ -449,113 +508,82 @@ function GenerateBillsManagementPage() {
                   step="1"
                   disabled={paying}
                 />
-                {discountError && (
-                  <p className="text-xs text-red-500 mt-1">{discountError}</p>
-                )}
+                {discountError && <p className="text-xs text-red-500 mt-1">{discountError}</p>}
                 {!discountError && manualDiscount > 0 && (
                   <p className="text-xs text-emerald-600 mt-1">
-                    Remaining balance: {fmt(totalAfterTokenDiscount - manualDiscount)}
+                    After discount: {fmt(totalAfterTokenDiscount - manualDiscount)}
                   </p>
                 )}
-                <p className="text-xs text-stone-400 mt-1">
-                  Maximum additional discount: {fmt(totalAfterTokenDiscount)}
-                </p>
               </div>
-              
-              {/* Payment Method Selection */}
+
+              {/* Payment Method */}
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-2">Payment Method</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("cash")}
-                    className={`px-4 py-2.5 rounded-xl font-semibold transition-all ${
-                      paymentMethod === "cash"
-                        ? "bg-amber-500 text-white shadow-md"
-                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                    }`}
-                    disabled={paying}
-                  >
-                    💵 Cash
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("online")}
-                    className={`px-4 py-2.5 rounded-xl font-semibold transition-all ${
-                      paymentMethod === "online"
-                        ? "bg-amber-500 text-white shadow-md"
-                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                    }`}
-                    disabled={paying}
-                  >
-                    📱 Online
-                  </button>
+                  {[
+                    { value: PaymentMethod.Cash,   label: '💵 Cash' },
+                    { value: PaymentMethod.Online, label: '📱 Online' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(opt.value)}
+                      disabled={paying}
+                      className={`px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                        paymentMethod === opt.value
+                          ? 'bg-amber-500 text-white shadow-md'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              
-              {/* Online Gateway Selection (only show if payment method is online) */}
-              {paymentMethod === "online" && (
+
+              {/* Online Gateway */}
+              {paymentMethod === PaymentMethod.Online && (
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">Select Gateway</label>
                   <select
                     value={onlineGateway}
-                    onChange={(e) => setOnlineGateway(e.target.value as OnlineGateway)}
+                    onChange={e => setOnlineGateway(e.target.value as OnlineGateway)}
                     className="w-full px-4 py-2.5 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
                     disabled={paying}
                   >
-                    <option value="esewa">🏦 eSewa</option>
-                    <option value="khalti">💎 Khalti</option>
-                    <option value="fonepay">📱 FonePay</option>
-                    <option value="banking">🏛️ Banking</option>
-                    <option value="other">🔄 Other</option>
+                    <option value={OnlineGateway.Esewa}>🏦 eSewa</option>
+                    <option value={OnlineGateway.Khalti}>💎 Khalti</option>
+                    <option value={OnlineGateway.Fonepay}>📱 FonePay</option>
+                    <option value={OnlineGateway.Banking}>🏛️ Banking</option>
+                    <option value={OnlineGateway.Other}>🔄 Other</option>
                   </select>
                 </div>
               )}
-              
-              {/* Payment Summary */}
-              <div className="border-t border-stone-200 pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-stone-600">Subtotal:</span>
-                  <span className="font-mono">{fmt(subtotal)}</span>
+
+              {/* Final summary */}
+              <div className="rounded-xl bg-stone-900 p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-stone-400">Total Payable</p>
+                    <p className="text-[10px] text-stone-500 mt-0.5 capitalize">
+                      via {paymentMethod === PaymentMethod.Online ? onlineGateway : 'Cash'}
+                    </p>
+                  </div>
+                  <span className="text-2xl font-bold text-amber-400 font-mono">{fmt(finalPayable)}</span>
                 </div>
-                {applyVAT && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">VAT (13%):</span>
-                    <span className="font-mono">{fmt(tax)}</span>
-                  </div>
-                )}
-                {tokenDiscount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-600 flex items-center gap-1">
-                      <span>🪙 Token Discount</span>
-                      <span className="text-xs text-stone-400">({order.token?.total_tokens || 0} pts)</span>
-                    </span>
-                    <span className="font-mono text-emerald-600">-{fmt(tokenDiscount)}</span>
-                  </div>
-                )}
-                {manualDiscount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-600">Manual Discount:</span>
-                    <span className="font-mono text-red-600">-{fmt(manualDiscount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-lg font-bold pt-2 border-t border-stone-200">
-                  <span className="text-stone-900">Payable Amount:</span>
-                  <span className="text-amber-700 font-mono">{fmt(finalPayable)}</span>
-                </div>
-                {(tokenDiscount + manualDiscount) > 0 && (
-                  <p className="text-xs text-center text-emerald-600 pt-1">
-                    Total savings: {fmt(tokenDiscount + manualDiscount)}
+                {totalDiscount > 0 && (
+                  <p className="text-xs text-emerald-400 mt-2">
+                    Savings: {fmt(totalDiscount)}
                   </p>
                 )}
               </div>
             </div>
-            
+
             <div className="p-6 border-t border-stone-200 flex gap-3">
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-xl text-stone-700 font-semibold hover:bg-stone-50 transition-all"
                 disabled={paying}
+                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-xl text-stone-700 font-semibold hover:bg-stone-50 transition-all"
               >
                 Cancel
               </button>
@@ -567,13 +595,13 @@ function GenerateBillsManagementPage() {
                 {paying ? (
                   <>
                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Processing...
                   </>
                 ) : (
-                  `Confirm Payment ${fmt(finalPayable)}`
+                  `Pay ${fmt(finalPayable)}`
                 )}
               </button>
             </div>
@@ -584,30 +612,34 @@ function GenerateBillsManagementPage() {
   );
 }
 
-// ── Shared receipt data props ─────────────────────────────────────────────────
+// ── Receipt props ─────────────────────────────────────────────────────────────
 interface ReceiptProps {
-  order: any;
+  order: PaymentDetailsForCashierWithDiscount;
   subtotal: number;
   tax: number;
   tokenDisc: number;
   manualDisc: number;
   total: number;
   applyVAT: boolean;
+  streak: number;
+  monthlyDays: number;
+  totalTokens: number;
 }
 
-// ── Receipt inner content (used for both preview & hidden print target) ───────
-function ReceiptInner({ order, subtotal, tax, tokenDisc, manualDisc, total, applyVAT }: ReceiptProps) {
-  const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleString('en-NP', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-
+// ── Receipt inner ─────────────────────────────────────────────────────────────
+function ReceiptInner({
+  order, subtotal, tax, tokenDisc, manualDisc, total,
+  applyVAT, streak, monthlyDays, totalTokens,
+}: ReceiptProps) {
   const fmtR = (n: number) =>
     `Rs ${new Intl.NumberFormat('en-NP', { maximumFractionDigits: 0 }).format(n)}`;
 
+  const firstItem     = order.order_menu_items?.[0];
+  const totalDiscount = tokenDisc + manualDisc;
+
   return (
     <div style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#1c1c1c', lineHeight: 1.5 }}>
+
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '2px' }}>SPICE GARDEN</div>
@@ -620,17 +652,17 @@ function ReceiptInner({ order, subtotal, tax, tokenDisc, manualDisc, total, appl
 
       {/* Meta */}
       <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-        <Row left="Date:" right={fmtDate(order.created_at)} />
-        <Row left="Table:" right={`#${order.table_number}`} />
+        {firstItem && <Row left="Date:"    right={fmtDate(firstItem.created_at)} />}
+        <Row left="Table:"    right={`#${order.table_number}`} />
         <Row left="Order ID:" right={order.order_id.slice(0, 8).toUpperCase()} />
-        {order.customer_name && <Row left="Customer:" right={order.customer_name} />}
-        {order.customer_phone && <Row left="Phone:" right={order.customer_phone} />}
-        <Row left="Waiter:" right={order.waiter_name} />
+        {order.customer_name  && <Row left="Customer:" right={order.customer_name} />}
+        {order.customer_phone && <Row left="Phone:"    right={order.customer_phone} />}
+        <Row left="Waiter:"   right={order.waiter_name} />
       </div>
 
       <DashedLine />
 
-      {/* Items header */}
+      {/* Column headers */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, marginBottom: '4px' }}>
         <span style={{ flex: 1 }}>ITEM</span>
         <span style={{ width: '28px', textAlign: 'right' }}>QTY</span>
@@ -641,7 +673,7 @@ function ReceiptInner({ order, subtotal, tax, tokenDisc, manualDisc, total, appl
       <DashedLine />
 
       {/* Items */}
-      {order.order_menu_items.map((item: any) => (
+      {(order.order_menu_items ?? []).map((item: OrderItemType) => (
         <div key={item.id} style={{ marginBottom: '4px' }}>
           <div style={{ fontSize: '11px', fontWeight: 600 }}>{item.menu_name}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#333' }}>
@@ -655,58 +687,79 @@ function ReceiptInner({ order, subtotal, tax, tokenDisc, manualDisc, total, appl
 
       <DashedLine />
 
-      {/* Totals */}
-      <div style={{ fontSize: '11px', marginBottom: '6px' }}>
-        <Row left="Subtotal:" right={fmtR(subtotal)} />
+      {/* Subtotal / VAT */}
+      <div style={{ fontSize: '11px', marginBottom: '4px' }}>
+        <Row left="Subtotal:"  right={fmtR(subtotal)} />
         {applyVAT && <Row left="VAT (13%):" right={fmtR(tax)} />}
-        {tokenDisc > 0 && <Row left="Token Disc:" right={`-${fmtR(tokenDisc)}`} />}
-        {manualDisc > 0 && <Row left="Manual Disc:" right={`-${fmtR(manualDisc)}`} />}
       </div>
+
+      {/* Discount section - shown if any discount exists */}
+      {totalDiscount > 0 && (
+        <>
+          <DashedLine />
+          <div style={{ fontSize: '11px', marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '3px' }}>
+              DISCOUNTS
+            </div>
+            {tokenDisc > 0 && (
+              <Row
+                left={`Token Disc (${totalTokens.toFixed(1)} pts):`}
+                right={`-${fmtR(tokenDisc)}`}
+              />
+            )}
+            {manualDisc > 0 && (
+              <Row left="Manual Disc:" right={`-${fmtR(manualDisc)}`} />
+            )}
+            <Row left="Total Savings:" right={`-${fmtR(totalDiscount)}`} />
+          </div>
+        </>
+      )}
 
       <DashedLine char="=" />
 
+      {/* Grand total */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '13px', margin: '6px 0' }}>
         <span>GRAND TOTAL</span>
-        <span>Rs {new Intl.NumberFormat('en-NP', { maximumFractionDigits: 0 }).format(total)}</span>
+        <span>{fmtR(total)}</span>
       </div>
 
       <DashedLine char="=" />
 
-      {/* Loyalty tokens */}
-      {order.token && tokenDisc > 0 && (
-        <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', margin: '6px 0' }}>
-          Loyalty tokens used: {order.token.total_tokens.toFixed(2)} pts
+      {/* Loyalty section - always show with values */}
+      <div style={{ fontSize: '10px', color: '#555', margin: '6px 0' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '3px' }}>
+          LOYALTY SUMMARY
         </div>
-      )}
+        <Row left="Total Tokens:"  right={`${totalTokens.toFixed(2)} pts`} />
+        {tokenDisc > 0 && <Row left="Token Savings:" right={`-${fmtR(tokenDisc)}`} />}
+        <Row left="Visit Streak:"  right={`${streak} days`} />
+        <Row left="Monthly Visits:" right={`${monthlyDays} days`} />
+      </div>
+      <DashedLine />
 
       {/* Footer */}
       <div style={{ textAlign: 'center', fontSize: '10px', color: '#555', marginTop: '10px' }}>
         <div>Thank you for dining with us!</div>
         <div style={{ marginTop: '2px' }}>Please visit again</div>
-        <div style={{ marginTop: '6px', fontSize: '9px', color: '#888' }}>
-          *** CUSTOMER COPY ***
-        </div>
+        <div style={{ marginTop: '6px', fontSize: '9px', color: '#888' }}>*** CUSTOMER COPY ***</div>
       </div>
     </div>
   );
 }
 
-// ── Receipt preview shell (right panel on screen) ─────────────────────────────
+// ── Receipt preview shell ─────────────────────────────────────────────────────
 function ReceiptPreview(props: ReceiptProps) {
   return (
-    <div style={{
-      width: '240px',
-      background: '#fff',
-      borderRadius: '4px',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
-      padding: '16px 14px',
-    }}>
+    <div
+      className="receipt-inner"
+      style={{ width: '240px', background: '#fff', borderRadius: '4px', boxShadow: '0 4px 24px rgba(0,0,0,0.18)', padding: '16px 14px' }}
+    >
       <ReceiptInner {...props} />
     </div>
   );
 }
 
-// ── Small receipt helpers ─────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function DashedLine({ char = '-' }: { char?: string }) {
   return (
     <div style={{ overflow: 'hidden', height: '12px', fontSize: '11px', color: '#ccc', marginBottom: '4px', whiteSpace: 'nowrap' }}>
@@ -724,7 +777,7 @@ function Row({ left, right }: { left: string; right: string }) {
   );
 }
 
-// ── skeleton ──────────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 function BillSkeleton() {
   return (
     <div className="min-h-screen bg-stone-100 p-4 md:p-8">
@@ -736,9 +789,8 @@ function BillSkeleton() {
         </div>
         <div className="h-48 bg-stone-200 rounded-xl" />
         <div className="h-28 bg-stone-200 rounded-xl" />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-16 bg-stone-200 rounded-xl" />
-          <div className="h-16 bg-stone-200 rounded-xl" />
+        <div className="grid grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-stone-200 rounded-xl" />)}
         </div>
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="h-12 bg-stone-300 rounded-xl" />
@@ -749,7 +801,7 @@ function BillSkeleton() {
   );
 }
 
-// ── error ─────────────────────────────────────────────────────────────────────
+// ── Error ─────────────────────────────────────────────────────────────────────
 function ErrorState() {
   return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center">

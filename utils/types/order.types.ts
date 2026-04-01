@@ -1,3 +1,5 @@
+import App from "next/app";
+
 export interface CreateCustomerOrderRequest{
     table_number : number;
     customer_name ?: string;
@@ -83,3 +85,11 @@ export interface ApprovedOrderLists {
   created_at : string;
 }
 
+
+
+export interface OrderHistoryResponse {
+  orders : ApprovedOrderLists[];
+  total : number;
+  has_more : boolean;
+  next_offset : number;
+}
