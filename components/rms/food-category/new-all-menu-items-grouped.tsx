@@ -19,11 +19,108 @@ import { EditMenuItemDialog } from "./new-update-menu-item-dialog-box"
 import { MenuItemDeleteDialog } from "./delete-dialog-box"
 import {
   Trash2, Pencil, UtensilsCrossed, ChevronDown,
-  Hash, CheckCircle2, XCircle, Search, ArrowUpDown
+  Hash, CheckCircle2, XCircle, Search, ArrowUpDown, X, Tag
 } from "lucide-react"
 import Image from "next/image"
 
 type FilterTab = "all" | "active" | "off"
+
+// ── Item Detail Dialog ──────────────────────────────────────────────────────
+function ItemDetailDialog({
+  item,
+  open,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  item: MenuItemWithCategory | null
+  open: boolean
+  onClose: () => void
+  onEdit: (item: MenuItemWithCategory) => void
+  onDelete: (item: MenuItemWithCategory) => void
+}) {
+  if (!open || !item) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative z-10 w-full max-w-sm rounded-3xl border border-border bg-card shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent z-10" />
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-card/80 border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Large image */}
+        <div className="relative w-full h-56 bg-muted/40">
+          {item.image_url ? (
+            <Image src={item.image_url} alt={item.name || "dish"} fill className="object-cover" sizes="400px" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <UtensilsCrossed className="h-16 w-16 text-muted-foreground/30" />
+            </div>
+          )}
+          <div className="absolute bottom-3 left-3">
+            {item.is_available ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/90 text-white shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                Available
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/90 text-white shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                Unavailable
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="px-5 py-4 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-bold text-foreground leading-tight">{item.name}</h2>
+            <span className="text-xl font-bold text-accent shrink-0">Rs {item.price}</span>
+          </div>
+          {item.description && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {item.category_name && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+                <Tag className="h-3 w-3" />
+                {item.category_name}
+              </div>
+            )}
+            {item.display_order !== undefined && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+                <Hash className="h-3 w-3" />
+                Order: {item.display_order}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 pt-1 border-t border-border">
+            <Button variant="outline" size="sm" onClick={() => { onEdit(item); onClose() }}
+              className="flex-1 rounded-xl h-9 gap-2 text-xs border-border hover:bg-muted/60">
+              <Pencil className="h-3.5 w-3.5" />Edit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => { onDelete(item); onClose() }}
+              className="flex-1 rounded-xl h-9 gap-2 text-xs">
+              <Trash2 className="h-3.5 w-3.5" />Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function NewAllMenuItemsGrouped() {
   const { data, isLoading } = useGetAllMenuItems()
@@ -40,6 +137,8 @@ function NewAllMenuItemsGrouped() {
   const [itemToEdit, setItemToEdit] = useState<MenuItemWithCategory | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
+  const [previewItem, setPreviewItem] = useState<MenuItemWithCategory | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const { mutate: update_menu_item, isPending: updating_menu_item } = useUpdateMenuItems()
   const { mutate: delete_menu_items, isPending: deleting_menu_items } = useDeleteMenuItems()
@@ -102,9 +201,6 @@ function NewAllMenuItemsGrouped() {
       onSuccess: (res) => {
         if (res.success && res.message) {
           queryClient.invalidateQueries({ queryKey: ["get-all-menu-items"] })
-          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
-          
-
           toast.success(res.message)
           setSelected([])
           setDeleteDialogOpen(false)
@@ -120,43 +216,31 @@ function NewAllMenuItemsGrouped() {
     setEditDialogOpen(true)
   }
 
-const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, imageRemoved?: boolean) => {
+  const openPreview = (item: MenuItemWithCategory) => {
+    setPreviewItem(item)
+    setPreviewOpen(true)
+  }
+
+  const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
     try {
       setUploadingImage(true)
-      console.log("this is iamge removed : ", imageRemoved, imageFile)
-      let updatedImage: string | null =  data.image_url || null
-      // If image was explicitly removed and no new image selected → delete old image from uploadthing
-      if (imageRemoved && !imageFile) {
-        if (itemToEdit?.image_url) {
-          await removeMultipleImages([itemToEdit.image_url])
-        }
+      let updatedImage: string | null = data.image_url || null
+      if (!imageFile && !data.image_url && itemToEdit?.image_url) {
+        await removeMultipleImages([itemToEdit.image_url])
         updatedImage = null
       }
-
-      // If a new image file is provided → upload it, then delete the old one
       if (imageFile) {
         const uploadResults = await startUpload([imageFile])
         if (uploadResults?.length) {
-          const newUrl = uploadResults[0].ufsUrl
-          // Delete old image from uploadthing if it exists
-          if (itemToEdit?.image_url) {
-            await removeMultipleImages([itemToEdit.image_url])
-          }
-          updatedImage = newUrl
-        } else {
-          throw new Error("Failed to upload image")
-        }
+          updatedImage = uploadResults[0].ufsUrl
+          if (data.image_url && data.image_url !== updatedImage) await removeMultipleImages([data.image_url])
+        } else throw new Error("Failed to upload image")
       }
-
-      console.log("this is the image url", updatedImage)
-
       const updatedData: UpdateMenuItemType = { ...data, image_url: updatedImage }
-
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.success && res.message) {
             queryClient.invalidateQueries({ queryKey: ["get-all-menu-items"] })
-            queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
             toast.success(res.message)
             setEditDialogOpen(false)
             setItemToEdit(null)
@@ -224,7 +308,7 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground -mx-8 -mt-8">
       <div className="py-4 space-y-5">
 
         {/* ── Hero card ──────────────────────────────────────────────────── */}
@@ -428,11 +512,12 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
                 menuItems.map((item) => (
                   <tr
                     key={item.id}
-                    className={`hover:bg-muted/20 transition-colors ${
+                    onClick={() => openPreview(item)}
+                    className={`hover:bg-muted/20 transition-colors cursor-pointer ${
                       selected.includes(item.id) ? "bg-accent/5" : ""
                     } ${deleting_menu_items || isSaving ? "opacity-60 pointer-events-none" : ""}`}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
@@ -441,14 +526,14 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
                       />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2">
                       {item.image_url ? (
-                        <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
-                          <Image src={item.image_url} alt={item.name || "image"} fill className="object-cover" sizes="40px" />
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
+                          <Image src={item.image_url} alt={item.name || "image"} fill className="object-cover" sizes="64px" />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
-                          <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+                        <div className="w-16 h-16 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
+                          <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
                     </td>
@@ -483,7 +568,7 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
                       <span className="text-sm text-muted-foreground">{item.display_order}</span>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openEditDialog(item)}
@@ -509,6 +594,14 @@ const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File, im
         </div>
 
       </div>
+
+      <ItemDetailDialog
+        item={previewItem}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        onEdit={openEditDialog}
+        onDelete={openSingleDeleteDialog}
+      />
 
       <MenuItemDeleteDialog
         open={deleteDialogOpen}

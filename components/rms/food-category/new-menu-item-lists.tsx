@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { removeMultipleImages } from "@/utils/actions/uploadthing/delete-images"
 import { useUploadThing } from "@/utils/uploadthing/uploadthing-client"
 import { toast } from "sonner"
-import { Trash2, Pencil, UtensilsCrossed } from "lucide-react"
+import { Trash2, Pencil, UtensilsCrossed, X, Tag, Hash, ToggleLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { EditMenuItemDialog } from "./new-update-menu-item-dialog-box"
@@ -19,6 +19,135 @@ type Props = {
   slugs: string
 }
 
+// ── Item Detail Dialog ──────────────────────────────────────────────────────
+function ItemDetailDialog({
+  item,
+  open,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  item: MenuItemsResponse | null
+  open: boolean
+  onClose: () => void
+  onEdit: (item: MenuItemsResponse) => void
+  onDelete: (item: MenuItemsResponse) => void
+}) {
+  if (!open || !item) return null
+
+  return (
+    // Backdrop — click outside closes
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* Dim overlay */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Card — stop propagation so clicking inside doesn't close */}
+      <div
+        className="relative z-10 w-full max-w-sm rounded-3xl border border-border bg-card shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Gold top line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent z-10" />
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-card/80 border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Large image */}
+        <div className="relative w-full h-56 bg-muted/40">
+          {item.image_url ? (
+            <Image
+              src={item.image_url}
+              alt={item.name || "dish"}
+              fill
+              className="object-cover"
+              sizes="400px"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <UtensilsCrossed className="h-16 w-16 text-muted-foreground/30" />
+            </div>
+          )}
+          {/* Status badge over image */}
+          <div className="absolute bottom-3 left-3">
+            {item.is_available ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/90 text-white shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                Available
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/90 text-white shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                Unavailable
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="px-5 py-4 space-y-4">
+          {/* Name + price */}
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-bold text-foreground leading-tight">{item.name}</h2>
+            <span className="text-xl font-bold text-accent shrink-0">Rs {item.price}</span>
+          </div>
+
+          {/* Description */}
+          {item.description && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+          )}
+
+          {/* Meta pills */}
+          <div className="flex flex-wrap gap-2">
+            {item.category_name && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+                <Tag className="h-3 w-3" />
+                {item.category_name}
+              </div>
+            )}
+            {item.display_order !== undefined && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+                <Hash className="h-3 w-3" />
+                Order: {item.display_order}
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2 pt-1 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { onEdit(item); onClose() }}
+              className="flex-1 rounded-xl h-9 gap-2 text-xs border-border hover:bg-muted/60"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => { onDelete(item); onClose() }}
+              className="flex-1 rounded-xl h-9 gap-2 text-xs"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Table Component ────────────────────────────────────────────────────
 function NewMenuItemsPage({ menuItems, slugs }: Props) {
   const queryClient = useQueryClient()
   const { startUpload } = useUploadThing("imageUploader")
@@ -29,6 +158,8 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
   const [itemsToDelete, setItemsToDelete] = useState<MenuItem[]>([])
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [itemToEdit, setItemToEdit] = useState<MenuItem | null>(null)
+  const [previewItem, setPreviewItem] = useState<MenuItemsResponse | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const { mutate: update_menu_item, isPending: updating_menu_item } = useUpdateMenuItems()
   const { mutate: delete_menu_items, isPending: deleting_menu_items } = useDeleteMenuItems()
@@ -61,7 +192,6 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
       onSuccess: (res) => {
         if (res.message && res.success) {
           queryClient.invalidateQueries({ queryKey: ["get-all-by-slug", slugs] })
-          queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
           toast.success(res.message)
           setSelected([])
           setDeleteDialogOpen(false)
@@ -79,50 +209,31 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
     setEditDialogOpen(true)
   }
 
-  const handleSaveMenuItem = async (
-    data: UpdateMenuItemType,
-    imageFile?: File,
-    imageRemoved?: boolean
-  ) => {
+  const openPreview = (item: MenuItemsResponse) => {
+    setPreviewItem(item)
+    setPreviewOpen(true)
+  }
+
+  const handleSaveMenuItem = async (data: UpdateMenuItemType, imageFile?: File) => {
     try {
       setUploadingImage(true)
-      let updatedImageUrl: string | null = data.image_url || null
-
-      // Case 1: User explicitly removed the image and didn't add a new one
-      if (imageRemoved && !imageFile) {
-        // Delete the old image from uploadthing if it exists
-        if (itemToEdit?.image_url) {
-          await removeMultipleImages([itemToEdit.image_url])
-        }
-        updatedImageUrl = null // ✅ Send null to backend
+      let updatedImage: string | null = data.image_url || null
+      if (!imageFile && !data.image_url && itemToEdit?.image_url) {
+        await removeMultipleImages([itemToEdit.image_url])
+        updatedImage = null
       }
-      // Case 2: User selected a new image — upload it and delete the old one
-      else if (imageFile) {
+      if (imageFile) {
         const uploadResults = await startUpload([imageFile])
         if (uploadResults?.length) {
-          const newUrl = uploadResults[0].ufsUrl
-          // Delete old image from uploadthing if it existed
-          if (itemToEdit?.image_url) {
-            await removeMultipleImages([itemToEdit.image_url])
-          }
-          updatedImageUrl = newUrl
-        } else {
-          throw new Error("Failed to upload image")
-        }
+          updatedImage = uploadResults[0].ufsUrl
+          if (data.image_url && data.image_url !== updatedImage) await removeMultipleImages([data.image_url])
+        } else throw new Error("Failed to upload image")
       }
-      // Case 3: No change to image — keep original image_url
-      // updatedImageUrl already has the original value
-
-      const updatedData: UpdateMenuItemType = { 
-        ...data, 
-        image_url: updatedImageUrl 
-      }
-      
+      const updatedData: UpdateMenuItemType = { ...data, image_url: updatedImage }
       update_menu_item(updatedData, {
         onSuccess: (res) => {
           if (res.message && res.success) {
             queryClient.invalidateQueries({ queryKey: ["get-all-by-slug", slugs] })
-            queryClient.invalidateQueries({ queryKey: ["get-cached-menu-items"] })
             toast.success(res.message || "Menu item updated successfully")
             setEditDialogOpen(false)
             setItemToEdit(null)
@@ -152,8 +263,6 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-
-              {/* Select-all checkbox — leftmost column in header */}
               <th className="px-4 py-3 w-10">
                 <input
                   type="checkbox"
@@ -165,14 +274,11 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
                   title="Select all"
                 />
               </th>
-
               <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Image</th>
               <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Name</th>
               <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Category</th>
               <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Price</th>
               <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</th>
-
-              {/* Actions column — shows bulk delete when items selected */}
               <th className="px-4 py-3 text-right">
                 {selected.length > 0 ? (
                   <Button
@@ -190,9 +296,7 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
                     Delete ({selected.length})
                   </Button>
                 ) : (
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    Actions
-                  </span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actions</span>
                 )}
               </th>
             </tr>
@@ -214,11 +318,13 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
               menuItems.map((item) => (
                 <tr
                   key={item.id}
-                  className={`hover:bg-muted/20 transition-colors ${
+                  onClick={() => openPreview(item)}
+                  className={`hover:bg-muted/20 transition-colors cursor-pointer ${
                     selected.includes(item.id) ? 'bg-accent/5' : ''
                   } ${deleting_menu_items || isSaving ? "opacity-60 pointer-events-none" : ""}`}
                 >
-                  <td className="px-4 py-3">
+                  {/* Checkbox — stop propagation so it doesn't open preview */}
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       className="w-4 h-4 rounded accent-primary cursor-pointer"
@@ -227,14 +333,15 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
                     />
                   </td>
 
-                  <td className="px-4 py-3">
+                  {/* Bigger image: w-16 h-16 */}
+                  <td className="px-4 py-2">
                     {item.image_url ? (
-                      <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
-                        <Image src={item.image_url} alt={item.name || "image"} fill className="object-cover" sizes="40px" />
+                      <div className="relative w-16 h-16 rounded-xl overflow-hidden ring-1 ring-border shrink-0">
+                        <Image src={item.image_url} alt={item.name || "image"} fill className="object-cover" sizes="64px" />
                       </div>
                     ) : (
-                      <div className="w-10 h-10 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
-                        <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+                      <div className="w-16 h-16 rounded-xl bg-muted/60 border border-border flex items-center justify-center shrink-0">
+                        <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
                   </td>
@@ -265,7 +372,8 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
                     )}
                   </td>
 
-                  <td className="px-4 py-3">
+                  {/* Edit/Delete — stop propagation so they don't open preview */}
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openEditDialog(item)}
@@ -289,6 +397,15 @@ function NewMenuItemsPage({ menuItems, slugs }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Item Detail Preview Dialog ───────────────────────────────── */}
+      <ItemDetailDialog
+        item={previewItem}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        onEdit={openEditDialog}
+        onDelete={openSingleDeleteDialog}
+      />
 
       <MenuItemDeleteDialog
         open={deleteDialogOpen}
