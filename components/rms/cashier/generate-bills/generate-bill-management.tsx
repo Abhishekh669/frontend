@@ -11,6 +11,11 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import {
+  Receipt, Printer, CreditCard, Coins, Flame, User, Hash,
+  Phone, ChefHat, AlertCircle, Loader2, ArrowLeft, BadgePercent,
+  UtensilsCrossed, X, CheckCircle2, Timer, XCircle,
+} from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -22,20 +27,27 @@ const fmtDate = (iso: string) =>
     hour: '2-digit', minute: '2-digit',
   });
 
-const STATUS_STYLES: Record<string, string> = {
-  completed:      'bg-green-100 text-green-700',
-  approved:       'bg-blue-100 text-blue-700',
-  progress:       'bg-yellow-100 text-yellow-700',
-  cancelled:      'bg-red-100 text-red-700',
-  'not-approved': 'bg-gray-100 text-gray-600',
+// ── Bug fix: exclude cancelled items from subtotal ─────────────────────────
+function calcSubtotal(items: OrderItemType[] | undefined): number {
+  if (!items) return 0;
+  return items
+    .filter((i) => i.status !== 'cancelled')
+    .reduce((s, i) => s + i.price * i.quantity, 0);
+}
+
+const STATUS_STYLES: Record<string, { bg: string; dot: string; text: string }> = {
+  completed:      { bg: 'bg-emerald-500/10', dot: 'bg-emerald-500', text: 'text-emerald-600' },
+  approved:       { bg: 'bg-blue-500/10',    dot: 'bg-blue-500',    text: 'text-blue-600' },
+  progress:       { bg: 'bg-amber-500/10',   dot: 'bg-amber-500',   text: 'text-amber-600' },
+  cancelled:      { bg: 'bg-destructive/10', dot: 'bg-destructive', text: 'text-destructive' },
+  'not-approved': { bg: 'bg-muted',          dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
 };
 
-const STATUS_DOT: Record<string, string> = {
-  completed:      'bg-green-500',
-  approved:       'bg-blue-500',
-  progress:       'bg-yellow-500',
-  cancelled:      'bg-red-500',
-  'not-approved': 'bg-gray-400',
+const ITEM_STATUS_ICONS: Record<string, React.ReactNode> = {
+  completed: <CheckCircle2 className="w-3 h-3 text-emerald-500" />,
+  approved:  <CheckCircle2 className="w-3 h-3 text-blue-500" />,
+  progress:  <Timer className="w-3 h-3 text-amber-500" />,
+  cancelled: <XCircle className="w-3 h-3 text-destructive" />,
 };
 
 // ── page ─────────────────────────────────────────────────────────────────────
@@ -57,9 +69,8 @@ function GenerateBillsManagementPage() {
 
   const order = data?.order as PaymentDetailsForCashierWithDiscount | undefined;
 
-  const subtotal = order?.order_menu_items?.reduce(
-    (s, i) => s + i.price * i.quantity, 0
-  ) ?? 0;
+  // ── Bug fix: use only non-cancelled items for subtotal ──────────────────
+  const subtotal = calcSubtotal(order?.order_menu_items);
 
   const tax = applyVAT ? subtotal * 0.13 : 0;
 
@@ -91,11 +102,13 @@ function GenerateBillsManagementPage() {
   const finalPayable  = totalAfterTokenDiscount - manualDiscount;
   const totalDiscount = tokenDiscount + manualDiscount;
 
+  const cancelledItems = order?.order_menu_items?.filter(i => i.status === 'cancelled') ?? [];
+  const cancelledTotal = cancelledItems.reduce((s, i) => s + i.price * i.quantity, 0);
+
   const handlePrint = () => {
     if (printRef.current) {
       const printContent = printRef.current.innerHTML;
       const originalContent = document.body.innerHTML;
-      
       document.body.innerHTML = printContent;
       window.print();
       document.body.innerHTML = originalContent;
@@ -105,9 +118,9 @@ function GenerateBillsManagementPage() {
 
   const handlePayment = async () => {
     const validationError = validateDiscount(manualDiscount);
-    if (validationError) { 
-      setDiscountError(validationError); 
-      return; 
+    if (validationError) {
+      setDiscountError(validationError);
+      return;
     }
 
     setPaying(true);
@@ -135,10 +148,7 @@ function GenerateBillsManagementPage() {
       setOnlineGateway(OnlineGateway.Esewa);
       setManualDiscount(0);
       setDiscountError('');
-      // Close modal and refresh or redirect
-      setTimeout(() => {
-        router.replace("/cashier")
-      }, 1500);
+      setTimeout(() => { router.replace("/cashier"); }, 1500);
     } catch (error) {
       console.error('Payment failed:', error);
       toast.error('An unexpected error occurred');
@@ -150,8 +160,7 @@ function GenerateBillsManagementPage() {
   if (isLoading)         return <BillSkeleton />;
   if (isError || !order) return <ErrorState />;
 
-  const chipStyle = STATUS_STYLES[order.status] ?? STATUS_STYLES['not-approved'];
-  const dotStyle  = STATUS_DOT[order.status]    ?? STATUS_DOT['not-approved'];
+  const statusStyle = STATUS_STYLES[order.status] ?? STATUS_STYLES['not-approved'];
 
   const streak      = order.token_details?.current_streak ?? 0;
   const monthlyDays = order.token_details?.monthly_days   ?? 0;
@@ -183,121 +192,187 @@ function GenerateBillsManagementPage() {
             border-radius: 0 !important;
             padding: 16px !important;
           }
-          @page { 
-            size: 80mm auto; 
-            margin: 6mm;
-          }
+          @page { size: 80mm auto; margin: 6mm; }
         }
       `}</style>
 
-      <div className="min-h-screen bg-stone-100 font-sans text-stone-800">
+      <div className="min-h-screen bg-background">
         <div className="flex flex-col lg:flex-row min-h-screen">
 
           {/* ══ LEFT ══ */}
           <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto space-y-6">
 
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Bill Summary</h1>
-                  <p className="text-xs text-stone-400 font-mono mt-0.5">
-                    {fmtDate(order.order_menu_items?.[0]?.created_at ?? new Date().toISOString())}
-                  </p>
+              <div className="relative rounded-3xl border border-border bg-card px-8 py-7 shadow-sm overflow-hidden">
+                <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
+                  style={{ background: 'radial-gradient(circle, color-mix(in oklch, var(--accent) 12%, transparent) 0%, transparent 70%)' }} />
+                <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[color-mix(in_oklch,var(--accent)_30%,transparent)] to-transparent" />
+
+                <div className="flex items-start justify-between relative">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-block w-1 h-5 rounded-full bg-accent" />
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>
+                        Bill Generation
+                      </span>
+                    </div>
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Bill Summary</h1>
+                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                      {fmtDate(order.order_menu_items?.[0]?.created_at ?? new Date().toISOString())}
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                    {order.status}
+                  </span>
                 </div>
-                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide ${chipStyle}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
-                  {order.status}
-                </span>
               </div>
 
               {/* VAT Toggle */}
-              <div className="bg-white border border-stone-200 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="text-2xl">💰</div>
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <BadgePercent className="w-4.5 h-4.5 text-emerald-500" />
+                    </div>
                     <div>
-                      <p className="text-sm font-semibold text-stone-800">Value Added Tax (VAT)</p>
-                      <p className="text-xs text-stone-500">13% tax on subtotal</p>
+                      <p className="text-sm font-semibold text-foreground">Value Added Tax (VAT)</p>
+                      <p className="text-xs text-muted-foreground">13% tax on subtotal</p>
                     </div>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  <label className="relative inline-flex items-center cursor-pointer gap-3">
                     <input type="checkbox" checked={applyVAT} onChange={e => setApplyVAT(e.target.checked)} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
-                    <span className="ms-3 text-sm font-medium text-stone-700">{applyVAT ? 'VAT Applied' : 'VAT Exempt'}</span>
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
+                    <span className="text-sm font-medium text-foreground">{applyVAT ? 'VAT Applied' : 'VAT Exempt'}</span>
                   </label>
                 </div>
               </div>
 
               {/* Meta cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Table',    value: `#${order.table_number}` },
-                  { label: 'Order ID', value: order.order_id.slice(0, 8).toUpperCase() },
-                  { label: 'Customer', value: order.customer_name ?? '—' },
-                  { label: 'Phone',    value: order.customer_phone ?? '—' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="bg-white border border-stone-200 rounded-xl p-3.5 shadow-sm">
-                    <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold mb-1">{label}</p>
-                    <p className="text-sm font-semibold text-stone-800 font-mono truncate">{value}</p>
+                  { label: 'Table',    value: `#${order.table_number}`,               icon: <Hash className="w-4 h-4" /> },
+                  { label: 'Order ID', value: order.order_id.slice(0, 8).toUpperCase(), icon: <Receipt className="w-4 h-4" /> },
+                  { label: 'Customer', value: order.customer_name ?? '—',              icon: <User className="w-4 h-4" /> },
+                  { label: 'Phone',    value: order.customer_phone ?? '—',             icon: <Phone className="w-4 h-4" /> },
+                ].map(({ label, value, icon }) => (
+                  <div key={label} className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground mb-2">
+                      {icon}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-semibold mb-1">{label}</p>
+                    <p className="text-sm font-semibold text-foreground font-mono truncate">{value}</p>
                   </div>
                 ))}
               </div>
 
               {/* Items table */}
-              <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden mb-4">
-                <div className="px-5 py-3 border-b border-stone-100 bg-stone-50">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-amber-700">
-                    Order Items ({order.order_menu_items?.length ?? 0})
-                  </p>
-                </div>
-                <div className="grid grid-cols-[1fr_48px_80px_96px] px-5 py-2 border-b border-stone-100 text-[10px] uppercase tracking-widest text-stone-400 font-semibold">
-                  <span>Item</span><span className="text-center">Qty</span>
-                  <span className="text-right">Unit</span><span className="text-right">Total</span>
-                </div>
-                {(order.order_menu_items ?? []).map((item: OrderItemType) => (
-                  <div key={item.id} className="grid grid-cols-[1fr_48px_80px_96px] px-5 py-3 border-b border-stone-100 last:border-none hover:bg-stone-50 transition-colors items-center">
-                    <div>
-                      <p className="text-sm font-medium text-stone-800">{item.menu_name}</p>
-                      <p className="text-[10px] text-stone-400 font-mono capitalize mt-0.5">{item.status}</p>
-                    </div>
-                    <p className="text-xs font-mono text-stone-500 text-center">×{item.quantity}</p>
-                    <p className="text-xs font-mono text-stone-500 text-right">{fmt(item.price)}</p>
-                    <p className="text-sm font-semibold font-mono text-stone-800 text-right">{fmt(item.price * item.quantity)}</p>
+              <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-border bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-1 h-5 rounded-full bg-accent" />
+                    <p className="text-[11px] uppercase tracking-[0.15em] font-semibold" style={{ color: 'var(--accent)' }}>
+                      Order Items
+                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[11px] font-medium">
+                      {order.order_menu_items?.length ?? 0}
+                    </span>
                   </div>
-                ))}
+                  {cancelledItems.length > 0 && (
+                    <span className="text-[11px] font-medium text-destructive bg-destructive/10 rounded-full px-2.5 py-1">
+                      {cancelledItems.length} cancelled · −{fmt(cancelledTotal)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_48px_80px_96px_80px] px-5 py-2.5 border-b border-border/50 text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-semibold bg-muted/20">
+                  <span>Item</span>
+                  <span className="text-center">Qty</span>
+                  <span className="text-right">Unit</span>
+                  <span className="text-right">Total</span>
+                  <span className="text-center">Status</span>
+                </div>
+
+                {(order.order_menu_items ?? []).map((item: OrderItemType) => {
+                  const isCancelled = item.status === 'cancelled';
+                  return (
+                    <div
+                      key={item.id}
+                      className={`grid grid-cols-[1fr_48px_80px_96px_80px] px-5 py-3.5 border-b border-border/50 last:border-none hover:bg-muted/20 transition-colors items-center ${isCancelled ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {item.menu_image ? (
+                          <img src={item.menu_image} alt={item.menu_name} className="w-8 h-8 rounded-lg object-cover border border-border" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-accent/10 border border-border flex items-center justify-center">
+                            <UtensilsCrossed className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                          </div>
+                        )}
+                        <div>
+                          <p className={`text-sm font-medium ${isCancelled ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {item.menu_name}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs font-mono text-muted-foreground text-center">×{item.quantity}</p>
+                      <p className="text-xs font-mono text-muted-foreground text-right">{fmt(item.price)}</p>
+                      <p className={`text-sm font-semibold font-mono text-right ${isCancelled ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                        {isCancelled ? <span className="text-muted-foreground/50">—</span> : fmt(item.price * item.quantity)}
+                      </p>
+                      <div className="flex justify-center">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[item.status]?.bg ?? 'bg-muted'} ${STATUS_STYLES[item.status]?.text ?? 'text-muted-foreground'}`}>
+                          {ITEM_STATUS_ICONS[item.status]}
+                          <span className="capitalize">{item.status}</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Totals */}
-              <div className="bg-white border border-stone-200 rounded-xl shadow-sm p-5 mb-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-stone-500 font-mono">
-                    <span>Subtotal</span><span>{fmt(subtotal)}</span>
+              <div className="rounded-2xl border border-border bg-card shadow-sm px-5 py-5">
+                <div className="space-y-2.5">
+                  {cancelledItems.length > 0 && (
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <XCircle className="w-3.5 h-3.5 text-destructive" />
+                        Cancelled Items Deducted
+                      </span>
+                      <span className="text-destructive font-mono">−{fmt(cancelledTotal)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm text-muted-foreground font-mono">
+                    <span>Subtotal {cancelledItems.length > 0 && <span className="text-xs">(active items only)</span>}</span>
+                    <span>{fmt(subtotal)}</span>
                   </div>
                   {applyVAT && (
-                    <div className="flex justify-between text-sm text-stone-500 font-mono">
+                    <div className="flex justify-between text-sm text-muted-foreground font-mono">
                       <span>VAT (13%)</span><span>{fmt(tax)}</span>
                     </div>
                   )}
                   {tokenDiscount > 0 && (
                     <div className="flex justify-between text-sm text-emerald-600 font-mono">
-                      <div className="flex items-center gap-1">
-                        <span>🪙 Token Discount</span>
-                        <span className="text-xs text-stone-400">({totalTokens.toFixed(2)} pts)</span>
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>Token Discount</span>
+                        <span className="text-xs text-muted-foreground">({totalTokens.toFixed(2)} pts)</span>
                       </div>
                       <span>−{fmt(tokenDiscount)}</span>
                     </div>
                   )}
                   {manualDiscount > 0 && (
-                    <div className="flex justify-between text-sm text-red-600 font-mono">
+                    <div className="flex justify-between text-sm text-destructive font-mono">
                       <span>Manual Discount</span>
                       <span>−{fmt(manualDiscount)}</span>
                     </div>
                   )}
                 </div>
-                <div className="border-t border-stone-200 mt-3 pt-3 flex justify-between items-baseline">
-                  <span className="text-base font-bold text-stone-900">Grand Total</span>
-                  <span className="text-2xl font-bold text-amber-700 font-mono">{fmt(finalPayable)}</span>
+                <div className="border-t border-border mt-4 pt-4 flex justify-between items-baseline">
+                  <span className="text-base font-bold text-foreground">Grand Total</span>
+                  <span className="text-2xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(finalPayable)}</span>
                 </div>
                 {totalDiscount > 0 && (
                   <p className="text-xs text-center text-emerald-600 mt-2">
@@ -306,26 +381,28 @@ function GenerateBillsManagementPage() {
                 )}
               </div>
 
-              {/* Waiter + Tokens + Streak - Always show with 0 values */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+              {/* Waiter + Tokens + Streak */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-accent flex items-center justify-center text-accent-foreground font-bold text-sm flex-shrink-0 ring-1 ring-border">
                     {order.waiter_image
                       ? <img src={order.waiter_image} alt={order.waiter_name} className="w-full h-full object-cover" />
-                      : order.waiter_name.charAt(0).toUpperCase()
+                      : <ChefHat className="w-5 h-5" />
                     }
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Served By</p>
-                    <p className="text-sm font-semibold text-stone-800 truncate">{order.waiter_name}</p>
+                    <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">Served By</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{order.waiter_name}</p>
                   </div>
                 </div>
 
-                <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
-                  <div className="text-2xl">🪙</div>
+                <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                  </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Loyalty Tokens</p>
-                    <p className="text-sm font-semibold text-stone-800">
+                    <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">Loyalty Tokens</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {totalTokens > 0 ? `${totalTokens.toFixed(2)} pts` : '0 pts'}
                     </p>
                     {tokenDiscount > 0 && (
@@ -336,18 +413,20 @@ function GenerateBillsManagementPage() {
                   </div>
                 </div>
 
-                <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
-                  <div className="text-2xl">🔥</div>
+                <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                  </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Visit Streak</p>
-                    <p className="text-sm font-semibold text-stone-800">
+                    <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">Visit Streak</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {streak > 0 ? `${streak} day streak` : '0 day streak'}
                     </p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {monthlyDays > 0 ? `${monthlyDays} days this month` : '0 days this month'}
                     </p>
                     {lastVisit && (
-                      <p className="text-[10px] text-stone-400">
+                      <p className="text-[10px] text-muted-foreground">
                         Last: {new Date(lastVisit).toLocaleDateString('en-NP', { month: 'short', day: 'numeric' })}
                       </p>
                     )}
@@ -355,12 +434,18 @@ function GenerateBillsManagementPage() {
                 </div>
               </div>
 
-              {/* Restaurant strip */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-base flex-shrink-0">S</div>
+              {/* RestroX brand strip */}
+              <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-accent-foreground font-bold text-base flex-shrink-0"
+                    style={{ background: 'var(--accent)' }}>
+                    R
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-card" />
+                </div>
                 <div>
-                  <p className="text-sm font-bold text-stone-900">Spice Garden</p>
-                  <p className="text-[10px] text-stone-500">Thamel, Kathmandu · +977-01-4xxxxxx · VAT: 12345678</p>
+                  <p className="text-sm font-bold text-foreground">RestroX</p>
+                  <p className="text-[10px] text-muted-foreground">Bagar, Pokhara · +977-61-xxxxxx · VAT: 12345678</p>
                 </div>
               </div>
 
@@ -368,33 +453,37 @@ function GenerateBillsManagementPage() {
               <div className="flex gap-3">
                 <button
                   onClick={handlePrint}
-                  className="flex-1 flex items-center justify-center gap-2 bg-stone-800 hover:bg-stone-900 text-white text-sm font-semibold py-3.5 rounded-xl transition-all active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl transition-all active:scale-95 border border-border bg-card text-foreground hover:bg-muted/50"
                 >
-                  🖨️ Print Bill
+                  <Printer className="w-4 h-4" />
+                  Print Bill
                 </button>
                 <button
                   onClick={() => setShowPaymentModal(true)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold py-3.5 rounded-xl transition-all active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl transition-all active:scale-95 text-accent-foreground"
+                  style={{ background: 'var(--accent)' }}
                 >
-                  💳 Pay {fmt(finalPayable)}
+                  <CreditCard className="w-4 h-4" />
+                  Pay {fmt(finalPayable)}
                 </button>
               </div>
 
             </div>
           </div>
 
-          {/* ══ RIGHT: Print preview - Only visible on desktop ══ */}
-          <div id="print-bill" ref={printRef} className="hidden lg:flex w-[320px] shrink-0 bg-stone-200 border-l border-stone-300 flex-col">
-            <div className="px-5 py-4 border-b border-stone-300 flex items-center justify-between">
+          {/* ══ RIGHT: Print preview ══ */}
+          <div id="print-bill" ref={printRef} className="hidden lg:flex w-[320px] shrink-0 bg-muted/30 border-l border-border flex-col">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-card">
               <div>
-                <p className="text-xs font-bold text-stone-700 uppercase tracking-widest">Print Preview</p>
-                <p className="text-[10px] text-stone-400 mt-0.5">80mm thermal receipt</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Print Preview</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">80mm thermal receipt</p>
               </div>
               <button
                 onClick={handlePrint}
-                className="text-xs bg-stone-800 text-white px-3 py-1.5 rounded-lg hover:bg-stone-900 transition-all active:scale-95 font-semibold"
+                className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 text-accent-foreground"
+                style={{ background: 'var(--accent)' }}
               >
-                🖨️ Print
+                Print
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 flex justify-center">
@@ -416,73 +505,100 @@ function GenerateBillsManagementPage() {
         </div>
       </div>
 
-      {/* ══ Payment Modal - Single confirmation ══ */}
+      {/* ══ Payment Modal ══ */}
       {showPaymentModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => !paying && setShowPaymentModal(false)}
         >
           <div
-            className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-card rounded-3xl border border-border max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto relative"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-stone-200">
-              <h2 className="text-xl font-bold text-stone-900">Payment Details</h2>
-              <p className="text-sm text-stone-500 mt-1">Complete the payment to finalise the bill</p>
+            {/* Gold top line */}
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/60 to-transparent rounded-t-3xl" />
+
+            {/* Header */}
+            <div className="px-6 pt-6 pb-5 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center">
+                  <CreditCard className="w-4.5 h-4.5" style={{ color: 'var(--accent)' }} />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground tracking-tight">Payment Details</h2>
+                  <p className="text-xs text-muted-foreground">Complete payment to finalise the bill</p>
+                </div>
+              </div>
+              {!paying && (
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="px-6 py-5 space-y-5">
 
               {/* VAT Toggle */}
-              <div className="bg-stone-50 rounded-xl p-3 border border-stone-200">
+              <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-stone-700">VAT (13%)</span>
-                    {applyVAT && <span className="text-xs text-emerald-600">✓ Applied</span>}
+                    <BadgePercent className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">VAT (13%)</span>
+                    {applyVAT && <span className="text-xs text-emerald-600 font-medium">✓ Applied</span>}
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" checked={applyVAT} onChange={e => setApplyVAT(e.target.checked)} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
                   </label>
                 </div>
               </div>
 
-              {/* Streak & Token banner - Always show with values */}
-              <div className="bg-gradient-to-r from-amber-50 to-emerald-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-xs font-bold text-stone-600 uppercase tracking-widest mb-3">Customer Loyalty</p>
+              {/* Loyalty Banner */}
+              <div className="rounded-2xl border border-border bg-muted/30 px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-3">Customer Loyalty</p>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="text-lg font-bold text-amber-600">{totalTokens.toFixed(0)}</p>
-                    <p className="text-[10px] text-stone-500">Total Tokens</p>
+                    <p className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{totalTokens.toFixed(0)}</p>
+                    <p className="text-[10px] text-muted-foreground">Total Tokens</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold text-orange-500">{streak}</p>
-                    <p className="text-[10px] text-stone-500">Day Streak 🔥</p>
+                    <p className="text-[10px] text-muted-foreground">Day Streak 🔥</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-emerald-600">{monthlyDays}</p>
-                    <p className="text-[10px] text-stone-500">Monthly Days</p>
+                    <p className="text-lg font-bold text-emerald-500">{monthlyDays}</p>
+                    <p className="text-[10px] text-muted-foreground">Monthly Days</p>
                   </div>
                 </div>
                 {tokenDiscount > 0 && (
-                  <div className="bg-emerald-100 rounded-lg px-3 py-1.5 text-center mt-3">
-                    <p className="text-xs text-emerald-700 font-semibold">
-                      🪙 Token discount of {fmt(tokenDiscount)} auto-applied (max 5% of subtotal)
+                  <div className="bg-emerald-500/10 rounded-xl px-3 py-2 text-center mt-3">
+                    <p className="text-xs text-emerald-600 font-semibold">
+                      Token discount of {fmt(tokenDiscount)} auto-applied (max 5% of subtotal)
                     </p>
                   </div>
                 )}
               </div>
 
               {/* Amount display */}
-              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                <p className="text-sm text-stone-600 mb-1">Amount Before Additional Discount</p>
-                <p className="text-2xl font-bold text-amber-700">{fmt(totalAfterTokenDiscount)}</p>
-                <div className="mt-2 space-y-1 text-xs text-stone-500">
+              <div className="rounded-2xl border border-border bg-muted/30 px-4 py-4"
+                style={{ borderColor: 'color-mix(in oklch, var(--accent) 30%, var(--border))' }}>
+                <p className="text-xs text-muted-foreground mb-1.5">Amount Before Additional Discount</p>
+                <p className="text-2xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(totalAfterTokenDiscount)}</p>
+                <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                  {cancelledItems.length > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>Cancelled items removed</span>
+                      <span className="font-mono">−{fmt(cancelledTotal)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between"><span>Subtotal</span><span className="font-mono">{fmt(subtotal)}</span></div>
                   {applyVAT && <div className="flex justify-between"><span>VAT (13%)</span><span className="font-mono">{fmt(tax)}</span></div>}
                   {tokenDiscount > 0 && (
                     <div className="flex justify-between text-emerald-600">
-                      <span>🪙 Token discount ({totalTokens.toFixed(2)} pts)</span>
+                      <span>Token discount ({totalTokens.toFixed(2)} pts)</span>
                       <span className="font-mono">−{fmt(tokenDiscount)}</span>
                     </div>
                   )}
@@ -491,16 +607,16 @@ function GenerateBillsManagementPage() {
 
               {/* Discount input */}
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-2">
+                <label className="block text-sm font-semibold text-foreground mb-2">
                   Additional Discount
-                  <span className="text-xs font-normal text-stone-400 ml-2">(Optional)</span>
+                  <span className="text-xs font-normal text-muted-foreground ml-2">(Optional)</span>
                 </label>
                 <input
                   type="number"
                   value={manualDiscount}
                   onChange={e => handleManualDiscountChange(Number(e.target.value))}
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
-                    discountError ? 'border-red-500 bg-red-50' : 'border-stone-300'
+                  className={`w-full h-9 px-4 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-colors bg-muted/30 focus:bg-background ${
+                    discountError ? 'border-destructive focus:ring-destructive/30' : 'border-border focus:ring-ring/30'
                   }`}
                   placeholder="Enter additional discount amount"
                   min="0"
@@ -508,7 +624,7 @@ function GenerateBillsManagementPage() {
                   step="1"
                   disabled={paying}
                 />
-                {discountError && <p className="text-xs text-red-500 mt-1">{discountError}</p>}
+                {discountError && <p className="text-xs text-destructive mt-1">{discountError}</p>}
                 {!discountError && manualDiscount > 0 && (
                   <p className="text-xs text-emerald-600 mt-1">
                     After discount: {fmt(totalAfterTokenDiscount - manualDiscount)}
@@ -518,24 +634,25 @@ function GenerateBillsManagementPage() {
 
               {/* Payment Method */}
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-2">Payment Method</label>
+                <label className="block text-sm font-semibold text-foreground mb-2">Payment Method</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { value: PaymentMethod.Cash,   label: '💵 Cash' },
-                    { value: PaymentMethod.Online, label: '📱 Online' },
+                    { value: PaymentMethod.Cash,   label: 'Cash',   icon: '💵' },
+                    { value: PaymentMethod.Online, label: 'Online', icon: '📱' },
                   ].map(opt => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setPaymentMethod(opt.value)}
                       disabled={paying}
-                      className={`px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                      className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                         paymentMethod === opt.value
-                          ? 'bg-amber-500 text-white shadow-md'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                          ? 'text-accent-foreground shadow-md'
+                          : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/60'
                       }`}
+                      style={paymentMethod === opt.value ? { background: 'var(--accent)' } : {}}
                     >
-                      {opt.label}
+                      {opt.icon} {opt.label}
                     </button>
                   ))}
                 </div>
@@ -544,11 +661,11 @@ function GenerateBillsManagementPage() {
               {/* Online Gateway */}
               {paymentMethod === PaymentMethod.Online && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">Select Gateway</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Select Gateway</label>
                   <select
                     value={onlineGateway}
                     onChange={e => setOnlineGateway(e.target.value as OnlineGateway)}
-                    className="w-full px-4 py-2.5 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                    className="w-full h-9 px-4 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring/30 bg-muted/30 focus:bg-background transition-colors"
                     disabled={paying}
                   >
                     <option value={OnlineGateway.Esewa}>🏦 eSewa</option>
@@ -561,15 +678,15 @@ function GenerateBillsManagementPage() {
               )}
 
               {/* Final summary */}
-              <div className="rounded-xl bg-stone-900 p-4">
+              <div className="rounded-2xl bg-primary px-5 py-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-xs text-stone-400">Total Payable</p>
-                    <p className="text-[10px] text-stone-500 mt-0.5 capitalize">
+                    <p className="text-xs text-primary-foreground/60">Total Payable</p>
+                    <p className="text-[10px] text-primary-foreground/40 mt-0.5 capitalize">
                       via {paymentMethod === PaymentMethod.Online ? onlineGateway : 'Cash'}
                     </p>
                   </div>
-                  <span className="text-2xl font-bold text-amber-400 font-mono">{fmt(finalPayable)}</span>
+                  <span className="text-2xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(finalPayable)}</span>
                 </div>
                 {totalDiscount > 0 && (
                   <p className="text-xs text-emerald-400 mt-2">
@@ -579,25 +696,23 @@ function GenerateBillsManagementPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-stone-200 flex gap-3">
+            <div className="px-6 pb-6 pt-4 border-t border-border flex gap-3">
               <button
                 onClick={() => setShowPaymentModal(false)}
                 disabled={paying}
-                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-xl text-stone-700 font-semibold hover:bg-stone-50 transition-all"
+                className="flex-1 px-4 py-2.5 border border-border rounded-xl text-foreground font-semibold hover:bg-muted/50 transition-all text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handlePayment}
                 disabled={paying || !!discountError}
-                className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm text-accent-foreground min-w-[140px]"
+                style={{ background: 'var(--accent)' }}
               >
                 {paying ? (
                   <>
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <span className="w-3.5 h-3.5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
                     Processing...
                   </>
                 ) : (
@@ -637,14 +752,18 @@ function ReceiptInner({
   const firstItem     = order.order_menu_items?.[0];
   const totalDiscount = tokenDisc + manualDisc;
 
+  // Only show non-cancelled items in receipt
+  const activeItems = (order.order_menu_items ?? []).filter((i: OrderItemType) => i.status !== 'cancelled');
+  const cancelledItems = (order.order_menu_items ?? []).filter((i: OrderItemType) => i.status === 'cancelled');
+
   return (
     <div style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#1c1c1c', lineHeight: 1.5 }}>
 
-      {/* Header */}
+      {/* Header — RestroX branding */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '2px' }}>SPICE GARDEN</div>
-        <div style={{ fontSize: '10px', color: '#555' }}>Thamel, Kathmandu</div>
-        <div style={{ fontSize: '10px', color: '#555' }}>+977-01-4xxxxxx</div>
+        <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '2px' }}>RESTROX</div>
+        <div style={{ fontSize: '10px', color: '#555' }}>Bagar, Pokhara</div>
+        <div style={{ fontSize: '10px', color: '#555' }}>+977-61-xxxxxx</div>
         <div style={{ fontSize: '10px', color: '#555' }}>VAT: 12345678</div>
       </div>
 
@@ -672,8 +791,8 @@ function ReceiptInner({
 
       <DashedLine />
 
-      {/* Items */}
-      {(order.order_menu_items ?? []).map((item: OrderItemType) => (
+      {/* Active Items only */}
+      {activeItems.map((item: OrderItemType) => (
         <div key={item.id} style={{ marginBottom: '4px' }}>
           <div style={{ fontSize: '11px', fontWeight: 600 }}>{item.menu_name}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#333' }}>
@@ -685,6 +804,22 @@ function ReceiptInner({
         </div>
       ))}
 
+      {/* Cancelled Items note */}
+      {cancelledItems.length > 0 && (
+        <>
+          <DashedLine />
+          <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '2px' }}>CANCELLED (not charged):</div>
+            {cancelledItems.map((item: OrderItemType) => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ textDecoration: 'line-through' }}>{item.menu_name} ×{item.quantity}</span>
+                <span style={{ textDecoration: 'line-through' }}>{fmtR(item.price * item.quantity)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <DashedLine />
 
       {/* Subtotal / VAT */}
@@ -693,7 +828,7 @@ function ReceiptInner({
         {applyVAT && <Row left="VAT (13%):" right={fmtR(tax)} />}
       </div>
 
-      {/* Discount section - shown if any discount exists */}
+      {/* Discount section */}
       {totalDiscount > 0 && (
         <>
           <DashedLine />
@@ -725,14 +860,14 @@ function ReceiptInner({
 
       <DashedLine char="=" />
 
-      {/* Loyalty section - always show with values */}
+      {/* Loyalty */}
       <div style={{ fontSize: '10px', color: '#555', margin: '6px 0' }}>
         <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '3px' }}>
           LOYALTY SUMMARY
         </div>
-        <Row left="Total Tokens:"  right={`${totalTokens.toFixed(2)} pts`} />
+        <Row left="Total Tokens:"   right={`${totalTokens.toFixed(2)} pts`} />
         {tokenDisc > 0 && <Row left="Token Savings:" right={`-${fmtR(tokenDisc)}`} />}
-        <Row left="Visit Streak:"  right={`${streak} days`} />
+        <Row left="Visit Streak:"   right={`${streak} days`} />
         <Row left="Monthly Visits:" right={`${monthlyDays} days`} />
       </div>
       <DashedLine />
@@ -780,21 +915,21 @@ function Row({ left, right }: { left: string; right: string }) {
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function BillSkeleton() {
   return (
-    <div className="min-h-screen bg-stone-100 p-4 md:p-8">
-      <div className="max-w-2xl mx-auto space-y-3 animate-pulse">
-        <div className="h-7 w-48 bg-stone-300 rounded-lg" />
-        <div className="h-4 w-32 bg-stone-200 rounded" />
-        <div className="grid grid-cols-4 gap-3 pt-2">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-stone-200 rounded-xl" />)}
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+        <div className="h-28 bg-muted rounded-3xl" />
+        <div className="h-16 bg-muted rounded-2xl" />
+        <div className="grid grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-muted rounded-2xl" />)}
         </div>
-        <div className="h-48 bg-stone-200 rounded-xl" />
-        <div className="h-28 bg-stone-200 rounded-xl" />
+        <div className="h-52 bg-muted rounded-3xl" />
+        <div className="h-28 bg-muted rounded-2xl" />
         <div className="grid grid-cols-3 gap-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-stone-200 rounded-xl" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-muted rounded-2xl" />)}
         </div>
         <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="h-12 bg-stone-300 rounded-xl" />
-          <div className="h-12 bg-amber-200 rounded-xl" />
+          <div className="h-12 bg-muted rounded-xl" />
+          <div className="h-12 bg-muted rounded-xl" />
         </div>
       </div>
     </div>
@@ -804,16 +939,24 @@ function BillSkeleton() {
 // ── Error ─────────────────────────────────────────────────────────────────────
 function ErrorState() {
   return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-5xl mb-3">⚠️</div>
-        <h2 className="text-xl font-bold text-stone-900">Order not found</h2>
-        <p className="text-sm text-stone-400 mt-1">The order may have been removed or the ID is invalid.</p>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center flex flex-col items-center gap-3 max-w-xs">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+            <AlertCircle className="w-7 h-7 text-destructive" />
+          </div>
+          <div className="absolute inset-0 rounded-3xl border border-destructive/10 scale-110 opacity-50" />
+        </div>
+        <h2 className="text-sm font-semibold text-foreground">Order not found</h2>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          The order may have been removed or the ID is invalid.
+        </p>
         <button
           onClick={() => window.history.back()}
-          className="mt-5 px-5 py-2.5 bg-stone-800 text-white text-sm font-semibold rounded-xl hover:bg-stone-900 transition-all active:scale-95"
+          className="mt-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all active:scale-95 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          ← Go Back
+          <ArrowLeft className="w-4 h-4" />
+          Go Back
         </button>
       </div>
     </div>
