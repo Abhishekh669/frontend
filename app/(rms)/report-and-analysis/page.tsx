@@ -1,9 +1,8 @@
-import CustomerReportAndAnalysisManagementPage from '@/components/rms/report-n-analysis/customer/customer-report-n-analysis-management'
-import SalesReportAndAnalysisManagementPage from '@/components/rms/report-n-analysis/sales/sales-report-n-analysis-management'
-import React from 'react'
+import ReportAndAnalysisManagementPage from '@/components/rms/report-n-analysis/report-n-analysis-management-page'
 
 function page() {
-  return <CustomerReportAndAnalysisManagementPage />
+  // TODO: add proper authorization
+  return <ReportAndAnalysisManagementPage />
 }
 
 export default page

@@ -649,3 +649,456 @@ export type {
   NewCustomerDefaultReportRequest,
   NewCustomerCustomRangeReportRequest,
 };
+
+
+
+
+
+// ─────────────────────────────────────────────────────────────
+// Pagination
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffPaginatedTrendPoints {
+  data: NewStaffTrendPoint[]
+  pagination: NewPaginationInfo
+}
+
+// ─────────────────────────────────────────────────────────────
+// Overview Card
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffOverviewCard {
+  total_employees: number
+  active_employees: number
+
+  total_present_days: number
+  total_absent_days: number
+  total_late_days: number
+  total_half_days: number
+  total_leave_days: number
+
+  overall_attendance_rate: number
+  late_rate: number
+  leave_approval_rate: number
+
+  total_work_hours: number
+  avg_work_hours_per_employee: number
+
+  busiest_day: string
+  peak_attend_hour: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Stats Card
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffStatsCard {
+  total_employees: number
+  active_employees: number
+  total_attendance_records: number
+  all_time_work_hours: number
+  avg_session_hours: number
+
+  most_present_employee_id: string
+  most_present_employee_name: string
+  most_present_days: number
+
+  most_absent_employee_id: string
+  most_absent_employee_name: string
+  most_absent_days: number
+
+  longest_avg_service_hours: number
+  longest_service_employee_id: string
+  longest_service_employee_name: string
+
+  total_pending_leaves: number
+  total_approved_leaves: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trend Point
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffTrendPoint {
+  period: string
+  present: number
+  absent: number
+  late: number
+  half_day: number
+  on_leave: number
+  total_work_hours: number
+  attendance_rate: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Attendance Record
+// ─────────────────────────────────────────────────────────────
+
+export interface NewEmployeeAttendanceRecord {
+  attendance_id: string
+  work_date: string
+  status: string
+  check_in_time?: string | null
+  check_out_time?: string | null
+  work_hours: number
+  need_review: boolean
+
+  employee_id: string
+  employee_name: string
+  email: string
+  phone: string
+  image?: string | null
+  role: string
+  gender: string
+}
+
+// ─────────────────────────────────────────────────────────────
+// Employee Attendance Summary
+// ─────────────────────────────────────────────────────────────
+
+export interface NewEmployeeAttendanceSummary {
+  employee_id: string
+  employee_name: string
+  email: string
+  phone: string
+  image?: string | null
+  role: string
+  gender: string
+
+  present_days: number
+  absent_days: number
+  late_days: number
+  half_days: number
+  leave_days: number
+  total_work_hours: number
+  avg_work_hours: number
+  attendance_rate: number
+  need_review_count: number
+
+  records: NewEmployeeAttendanceRecord[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// Most Present
+// ─────────────────────────────────────────────────────────────
+
+export interface NewMostPresentEmployee {
+  employee_id: string
+  employee_name: string
+  email: string
+  phone: string
+  image?: string | null
+  role: string
+  gender: string
+  present_days: number
+  total_work_hours: number
+  attendance_rate: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Most Absent
+// ─────────────────────────────────────────────────────────────
+
+export interface NewMostAbsentEmployee {
+  employee_id: string
+  employee_name: string
+  email: string
+  phone: string
+  image?: string | null
+  role: string
+  gender: string
+  absent_days: number
+  total_work_hours: number
+  attendance_rate: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Longest Service
+// ─────────────────────────────────────────────────────────────
+
+export interface NewLongestServiceEmployee {
+  employee_id: string
+  employee_name: string
+  email: string
+  phone: string
+  image?: string | null
+  role: string
+  gender: string
+  total_work_hours: number
+  avg_shift_hours: number
+  present_days: number
+  attendance_rate: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Role Breakdown
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffRoleBreakdown {
+  role: string
+  employee_count: number
+  total_work_hours: number
+  avg_work_hours: number
+  attendance_rate: number
+  total_salary: number
+  avg_salary: number
+  percent: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Leave Analysis
+// ─────────────────────────────────────────────────────────────
+
+export interface NewLeaveAnalysis {
+  total_requests: number
+  pending_count: number
+  approved_count: number
+  rejected_count: number
+  approval_rate: number
+  avg_leave_days: number
+  top_leave_employees: NewTopLeaveEmployee[]
+}
+
+export interface NewTopLeaveEmployee {
+  employee_id: string
+  employee_name: string
+  role: string
+  leave_count: number
+  total_days: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Daily Summary
+// ─────────────────────────────────────────────────────────────
+
+export interface NewDailyAttendanceSummary {
+  work_date: string
+  present: number
+  absent: number
+  late: number
+  half_day: number
+  on_leave: number
+  total_work_hours: number
+  attendance_rate: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Peak Hours
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffPeakHour {
+  hour: number
+  check_ins: number
+  check_outs: number
+  active_staff: number
+  avg_work_hours: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// Payroll Summary
+// ─────────────────────────────────────────────────────────────
+
+export interface NewPayrollSummary {
+  total_monthly_salary: number
+  total_employees: number
+  avg_salary: number
+  by_role: NewStaffRoleBreakdown[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// Default Response
+// ─────────────────────────────────────────────────────────────
+
+export interface NewDefaultStaffResponse {
+  overview: NewStaffOverviewCard
+  stats_card: NewStaffStatsCard
+  daily_trend: NewStaffTrendPoint[]
+  weekly_trend: NewStaffTrendPoint[]
+  monthly_trend: NewStaffTrendPoint[]
+  yearly_trend: NewStaffTrendPoint[]
+  daily_summary: NewDailyAttendanceSummary[]
+  employee_attendance: NewEmployeeAttendanceSummary[]
+  most_present_employees: NewMostPresentEmployee[]
+  most_absent_employees: NewMostAbsentEmployee[]
+  longest_service_employees: NewLongestServiceEmployee[]
+  role_breakdown: NewStaffRoleBreakdown[]
+  leave_analysis: NewLeaveAnalysis
+  peak_hours: NewStaffPeakHour[]
+  payroll_summary: NewPayrollSummary
+}
+
+// ─────────────────────────────────────────────────────────────
+// Custom Range Response
+// ─────────────────────────────────────────────────────────────
+
+export interface NewCustomRangeStaffResponse {
+  overview: NewStaffOverviewCard
+  stats_card: NewStaffStatsCard
+  daily_trend?: NewStaffPaginatedTrendPoints
+  weekly_trend?: NewStaffPaginatedTrendPoints
+  monthly_trend?: NewStaffPaginatedTrendPoints
+  yearly_trend?: NewStaffPaginatedTrendPoints
+  daily_summary: NewDailyAttendanceSummary[]
+  employee_attendance: NewEmployeeAttendanceSummary[]
+  most_present_employees: NewMostPresentEmployee[]
+  most_absent_employees: NewMostAbsentEmployee[]
+  longest_service_employees: NewLongestServiceEmployee[]
+  role_breakdown: NewStaffRoleBreakdown[]
+  leave_analysis: NewLeaveAnalysis
+  peak_hours: NewStaffPeakHour[]
+  payroll_summary: NewPayrollSummary
+}
+
+// ─────────────────────────────────────────────────────────────
+// Request
+// ─────────────────────────────────────────────────────────────
+
+export interface NewStaffCustomRangeReportRequest {
+  from: string
+  to: string
+  limit: number
+  page: number
+}
+
+
+// types/rawMaterialReport.ts
+
+export interface NewPaginationInfo {
+  total: number;
+  has_more: boolean;
+  next_page: number;
+  limit: number;
+  page: number;
+}
+
+// ─── Raw Material Overview Card ───────────────────────────────────────────────
+
+export interface NewRawMaterialOverviewCard {
+  total_material_used: number;
+  total_investment: number;
+  total_orders: number;
+  highest_cost_material_value: number;
+  highest_cost_material_name: string;
+  most_used_material_quantity: number;
+  most_used_material_name: string;
+}
+
+// ─── Raw Material Stats Card (All Time) ──────────────────────────────────────
+
+export interface NewRawMaterialStatsCard {
+  total_materials: number;
+  total_current_stock: number;
+  total_inventory_value: number;
+  total_material_used_all_time: number;
+  total_investment_all_time: number;
+  max_used_quantity: number;
+  most_used_material_name: string;
+  most_used_material_quantity: number;
+  most_expensive_unit_cost: number;
+  most_expensive_material_name: string;
+  avg_material_value: number;
+}
+
+// ─── Trend Point ─────────────────────────────────────────────────────────────
+
+export interface NewRawMaterialTrendPoint {
+  period: string;
+  material_used: number;
+  total_cost: number;
+  orders_count: number;
+}
+
+// ─── Paginated Trend ─────────────────────────────────────────────────────────
+
+export interface NewRawMaterialPaginatedTrendPoints {
+  data: NewRawMaterialTrendPoint[];
+  pagination: NewPaginationInfo;
+}
+
+// ─── Top Used Raw Material ───────────────────────────────────────────────────
+
+export interface NewTopUsedRawMaterial {
+  material_id: string;
+  material_name: string;
+  unit: string;
+  unit_cost: number;
+  total_quantity_used: number;
+  total_cost: number;
+  affected_orders: number;
+}
+
+// ─── Usage Breakdown ─────────────────────────────────────────────────────────
+
+export interface NewRawMaterialUsageBreakdown {
+  material_id: string;
+  material_name: string;
+  unit: string;
+  unit_cost: number;
+  current_stock: number;
+  period_usage: number;
+  period_cost: number;
+  usage_percent: number;
+  orders_count: number;
+}
+
+// ─── Peak Hour ───────────────────────────────────────────────────────────────
+
+export interface NewRawMaterialPeakHour {
+  hour: number;
+  total_material_used: number;
+  total_cost: number;
+  orders_count: number;
+  unique_items_used: number;
+}
+
+// ─── Daily Usage Summary ─────────────────────────────────────────────────────
+
+export interface NewDailyRawMaterialUsage {
+  usage_date: string;
+  total_material_used: number;
+  total_cost: number;
+  orders_count: number;
+  unique_materials_used: number;
+}
+
+// ─── Default Response ────────────────────────────────────────────────────────
+
+export interface NewDefaultRawMaterialResponse {
+  overview: NewRawMaterialOverviewCard;
+  stats_card: NewRawMaterialStatsCard;
+  daily_trend: NewRawMaterialTrendPoint[];
+  weekly_trend: NewRawMaterialTrendPoint[];
+  monthly_trend: NewRawMaterialTrendPoint[];
+  yearly_trend: NewRawMaterialTrendPoint[];
+  top_used_materials: NewTopUsedRawMaterial[];
+  material_usage_breakdown: NewRawMaterialUsageBreakdown[];
+  peak_usage_hours: NewRawMaterialPeakHour[];
+  daily_usage_summary: NewDailyRawMaterialUsage[];
+}
+
+// ─── Custom Range Response ───────────────────────────────────────────────────
+
+export interface NewCustomRangeRawMaterialResponse {
+  overview: NewRawMaterialOverviewCard;
+  stats_card: NewRawMaterialStatsCard;
+  daily_trend: NewRawMaterialPaginatedTrendPoints | null;
+  weekly_trend: NewRawMaterialPaginatedTrendPoints | null;
+  monthly_trend: NewRawMaterialPaginatedTrendPoints | null;
+  yearly_trend: NewRawMaterialPaginatedTrendPoints | null;
+  top_used_materials: NewTopUsedRawMaterial[];
+  material_usage_breakdown: NewRawMaterialUsageBreakdown[];
+  peak_usage_hours: NewRawMaterialPeakHour[];
+  daily_usage_summary: NewDailyRawMaterialUsage[];
+}
+
+// ─── Request ─────────────────────────────────────────────────────────────────
+
+export interface NewRawMaterialCustomRangeReportRequest {
+  from: string; // ISO date string
+  to: string;   // ISO date string
+  limit: number;
+  page: number;
+}
+
+// ─── API Response Wrapper (if you use one) ───────────────────────────────────
+
