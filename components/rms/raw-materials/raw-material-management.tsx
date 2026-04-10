@@ -177,7 +177,7 @@ export default function RawMaterialManagement({ user }: { user: User }) {
             <div className="flex items-center gap-2 mb-1">
               <span className="inline-block w-1 h-5 rounded-full bg-accent" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">
-                Inventory
+                Ingredients
               </span>
             </div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">

@@ -37,7 +37,7 @@ export const sidebarRoutes = [
   { title: "Kitchen",    path: AvailableRoutes.CHEF_ROUTE,         icon: ChefHat         },
   { title: "Orders",     path: AvailableRoutes.ORDER_MANAGEMENT,   icon: ClipboardList   },
   { title: "Tables",     path: AvailableRoutes.TABLE_MANAGEMENT,   icon: Grid3X3         },
-  { title: "Inventory",  path: AvailableRoutes.RAW_MATERIALS,      icon: Package         },
+  { title: "Ingredients",  path: AvailableRoutes.RAW_MATERIALS,      icon: Package         },
   { title: "Staff",      path: AvailableRoutes.CLIENT_MANAGEMENT,  icon: Users           },
   { title: "Reports",    path: AvailableRoutes.REPORTS,            icon: FileBarChart    },
   { title: "Settings",   path: AvailableRoutes.SETTINGS,           icon: Settings        },
