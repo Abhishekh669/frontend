@@ -16,6 +16,9 @@ import {
   Phone, ChefHat, AlertCircle, Loader2, ArrowLeft, BadgePercent,
   UtensilsCrossed, X, CheckCircle2, Timer, XCircle,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { User as utype } from '@/utils/types/user.types';
+import { hasPermission } from '@/utils/helper/check-permission';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -51,12 +54,13 @@ const ITEM_STATUS_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ── page ─────────────────────────────────────────────────────────────────────
-function GenerateBillsManagementPage() {
+function GenerateBillsManagementPage({user} : {user : utype}) {
+  if(!user)return null;
   const params   = useSearchParams();
   const order_id = params.get('id');
   const router = useRouter();
   const printRef = useRef<HTMLDivElement>(null);
-
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useGetOrderDetailsForCashierById(order_id ?? '');
 
   const [paying, setPaying]                     = useState(false);
@@ -117,6 +121,10 @@ function GenerateBillsManagementPage() {
   };
 
   const handlePayment = async () => {
+    if(!hasPermission(user.role, "create:cashier")){
+      toast.error("unauthohrized user")
+      return;
+    }
     const validationError = validateDiscount(manualDiscount);
     if (validationError) {
       setDiscountError(validationError);
@@ -142,6 +150,7 @@ function GenerateBillsManagementPage() {
         setPaying(false);
         return;
       }
+      queryClient.invalidateQueries({ queryKey: ["get-approved-orders-for-cashier"] });
       toast.success('Payment processed successfully!');
       setShowPaymentModal(false);
       setPaymentMethod(PaymentMethod.Cash);

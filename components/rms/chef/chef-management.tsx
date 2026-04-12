@@ -10,6 +10,7 @@ import {
 } from "@/utils/types/order.types";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import { User } from "@/utils/types/user.types";
 
 // ─── Filter type ─────────────────────────────────────────────────────────────
 type FilterValue = orderStatus | "all";
@@ -389,7 +390,8 @@ function Skeleton() {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function KitchenDashboard() {
+export default function KitchenDashboard({user} : {user : User}) {
+  if(!user)return null;
   const { data, isError, isLoading, refetch, isRefetching } = useGetOrdersStatus(true);
   const rawOrders: CustomerOrderRequest[] = data?.order_requests ?? [];
 

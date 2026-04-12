@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils'
 import { acceptAttendanceLeaveRequestByAdmin, cancelLeaveRequestByAdmin } from '@/utils/actions/attendance/attendance.put'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { hasPermission } from '@/utils/helper/check-permission'
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,7 +175,7 @@ function ConfirmDialog({ open, action, employeeName, days, onConfirm, onCancel, 
 
 
 // ─── Leave Card ───────────────────────────────────────────────────────────────
-function LeaveCard({ leave, index }: { leave: AttendanceLeaveResponse; index: number }) {
+function LeaveCard({ leave, index, user }: { user : User,leave: AttendanceLeaveResponse; index: number }) {
   const [expanded, setExpanded] = useState(false)
   const [pendingAction, setPendingAction] = useState<'approve' | 'reject' | null>(null)
   const [loadingAction, setLoadingAction] = useState<'approve' | 'reject' | null>(null)
@@ -346,7 +347,7 @@ function LeaveCard({ leave, index }: { leave: AttendanceLeaveResponse; index: nu
                   variant="outline"
                   size="sm"
                   onClick={() => setPendingAction('reject')}
-                  disabled={loadingAction !== null}
+                  disabled={loadingAction !== null || !hasPermission(user.role, "update:attendance")}
                   className="flex-1 border-red-900/50 bg-red-950/20 text-red-400 hover:bg-red-900/30 hover:text-red-300 hover:border-red-700/50 transition-all duration-200 font-semibold text-xs h-9"
                 >
                   {loadingAction === 'reject'
@@ -368,7 +369,7 @@ function LeaveCard({ leave, index }: { leave: AttendanceLeaveResponse; index: nu
                 <Button
                   size="sm"
                   onClick={() => setPendingAction('approve')}
-                  disabled={loadingAction !== null}
+                  disabled={loadingAction !== null || !hasPermission(user.role, "update:attendance")}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 shadow-lg shadow-emerald-900/30 transition-all duration-200 tracking-wide"
                 >
                   {loadingAction === 'approve'
@@ -404,6 +405,7 @@ function LeaveCard({ leave, index }: { leave: AttendanceLeaveResponse; index: nu
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 function AttendanceRequestsManagement({ user }: { user: User }) {
+  if(!user)return null;
   const { data, isLoading, isError, refetch } = useGetAllAttendanceLeaveRequests()
   const leaves = data?.attendance_leave ?? []
 
@@ -509,7 +511,7 @@ function AttendanceRequestsManagement({ user }: { user: User }) {
         {!isLoading && !isError && leaves.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {leaves.map((leave, i) => (
-              <LeaveCard key={leave.id} leave={leave} index={i} />
+              <LeaveCard key={leave.id} leave={leave} index={i} user={user} />
             ))}
           </div>
         )}

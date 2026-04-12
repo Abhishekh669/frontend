@@ -56,6 +56,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useGetAllOrderHistory } from "@/utils/hooks/tanstack-query/query-hook/order/use-get-all-order-history-for-admin";
 import { GetAllOrderHistoryQuery } from "@/utils/actions/order/order.get";
 import { ApprovedOrderLists, OrderItemType } from "@/utils/types/order.types";
+import { User } from "@/utils/types/user.types";
 
 const PAGE_SIZES = [5, 10, 20, 50];
 const TODAY = new Date();
@@ -80,7 +81,7 @@ const fmtDate = (iso: string) =>
     minute: "2-digit",
   });
 
-export default function OrderManagementPage() {
+export default function OrderManagementPage({user} : {user : User}) {
   const [query, setQuery] = useState<GetAllOrderHistoryQuery>({
     limit: 10,
     page: 0,

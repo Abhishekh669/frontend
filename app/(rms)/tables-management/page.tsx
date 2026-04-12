@@ -11,7 +11,7 @@ async function page() {
   if (!data?.data) {
     return null;
   }
-  
+
 
   const user = data.data as User;
 

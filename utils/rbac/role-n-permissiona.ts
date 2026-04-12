@@ -85,6 +85,13 @@ export const ReportManagementAction = {
   VIEW_ANALYSIS: "view:analysis" as const,
 }
 
+export const CashierManagementAction = {
+  VIEW_CASHIER: "view:cashier" as const,
+  DELETE_CASHIER: "delete:cashier" as const,
+  UPDATE_CASHIER: "update:cashier" as const,
+  CREATE_CASHIER: "create:cashier" as const,
+}
+
 
 export const AvailableRoutes = {
   DASHBOARD: "/dashboard",
@@ -124,6 +131,7 @@ export const routePermissions: Record<Role, Route[]> = {
     AvailableRoutes.ORDER_MANAGEMENT,
     AvailableRoutes.TABLE_MANAGEMENT,
     AvailableRoutes.FOOD_CATEGORY,
+    AvailableRoutes.CASHIER_ROUTE,
   ],
   waiter: [
     AvailableRoutes.DASHBOARD,
@@ -205,6 +213,12 @@ export const rolePermissions: Record<Role, string[]> = {
     RawMaterialManagementAction.UPDATE_RAW_MATERIALS,
     RawMaterialManagementAction.DELETE_RAW_MATERIALS,
 
+    //CASHIER MANAGEMENT
+    CashierManagementAction.VIEW_CASHIER,
+    CashierManagementAction.CREATE_CASHIER,
+    CashierManagementAction.UPDATE_CASHIER,
+    CashierManagementAction.DELETE_CASHIER,
+
     // Settings (still as string if no constant)
     "view:settings",
   ],
@@ -220,6 +234,11 @@ export const rolePermissions: Record<Role, string[]> = {
     AttendanceManagementAction.VIEW_ATTENDANCE,
     TableAction.VIEW_TABLES,
     TableAction.UPDATE_TABLES,
+
+    CashierManagementAction.VIEW_CASHIER,
+    CashierManagementAction.CREATE_CASHIER,
+    CashierManagementAction.UPDATE_CASHIER,
+    CashierManagementAction.DELETE_CASHIER,
 
   ],
 

@@ -53,6 +53,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { ApprovedOrderLists, OrderItemType, orderStatus } from "@/utils/types/order.types";
+import { User as Utype } from "@/utils/types/user.types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const statusConfig: Record<
@@ -345,8 +346,8 @@ function OrderDetailDialog({
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────
-function CashierManagementPage() {
-
+function CashierManagementPage({user} : {user : Utype}) {
+  if(!user)return null;
   const { data, isError, isLoading } = useGetApprovedOrdersForCashier(true);
 
   const [searchName, setSearchName] = useState("");

@@ -1,4 +1,4 @@
-import { AttendanceManagementAction, EditDialogBoxAction, TableAction } from "../rbac/role-n-permissiona";
+import { AttendanceManagementAction, CashierManagementAction, EditDialogBoxAction, TableAction } from "../rbac/role-n-permissiona";
 
 export type Role = "admin" | "manager" | "cashier" | "chef" | "waiter" | "delivery_staff" | "customer";
 export type Gender = "male" | "other" | "female"
@@ -83,6 +83,8 @@ export interface UsersForAttendance {
 
 export type Permission =
 
+
+
   typeof EditDialogBoxAction.EDIT_PHONE
   | typeof EditDialogBoxAction.EDIT_ROLE_DELIVERY_STAFF
   | typeof EditDialogBoxAction.EDIT_ROLE_CASHIER
@@ -101,6 +103,11 @@ export type Permission =
   | typeof AttendanceManagementAction.CHECKOUT_ATTENDANCE
   | typeof AttendanceManagementAction.DELETE_ATTENDANCE
   | typeof AttendanceManagementAction.UPDATE_ATTENDANCE
+
+  | typeof CashierManagementAction.VIEW_CASHIER
+  | typeof CashierManagementAction.CREATE_CASHIER
+  | typeof CashierManagementAction.UPDATE_CASHIER
+  | typeof CashierManagementAction.DELETE_CASHIER
 
   // Dashboard
   | "view:dashboard"
