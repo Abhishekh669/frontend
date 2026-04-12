@@ -3,7 +3,7 @@ import { getUserFromTokenAction } from '@/utils/actions/user/user.get.action';
 import { hasPermission } from '@/utils/helper/check-permission';
 import { User } from '@/utils/types/user.types';
 import { redirect } from 'next/navigation';
-
+export const dynamic = "force-dynamic";
 async function GenerateBillPage() {
   const data = await getUserFromTokenAction();
       if (!data.data) {

@@ -1,9 +1,8 @@
 import ReportAndAnalysisManagementPage from '@/components/rms/report-n-analysis/report-n-analysis-management-page'
 import { getUserFromTokenAction } from '@/utils/actions/user/user.get.action';
 import { hasPermission } from '@/utils/helper/check-permission';
-import { FoodCategoryManagementAction } from '@/utils/rbac/role-n-permissiona';
 import { User } from '@/utils/types/user.types';
-
+export const dynamic = "force-dynamic";
 async function page() {
   const data = await getUserFromTokenAction();
         if(!data.data) {
