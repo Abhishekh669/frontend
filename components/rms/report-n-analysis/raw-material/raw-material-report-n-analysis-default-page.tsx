@@ -70,18 +70,18 @@ const DashboardSkeleton = () => (
     
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-white rounded-xl border border-gray-200 p-5">
+        <div key={i} className="bg-card rounded-xl border border-border p-5">
           <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mb-3" />
           <div className="h-7 w-32 bg-gray-200 rounded animate-pulse" />
         </div>
       ))}
     </div>
     
-    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+    <div className="bg-card rounded-xl border border-border p-5 mb-5">
       <div className="h-64 bg-gray-200 rounded animate-pulse" />
     </div>
     
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-card rounded-xl border border-border p-5">
       <div className="h-48 bg-gray-200 rounded animate-pulse" />
     </div>
   </div>
@@ -101,9 +101,9 @@ const StatCard = ({
   accent?: string; 
   icon?: string;
 }) => (
-  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+  <div className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
     <div className="flex justify-between items-start mb-2">
-      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
         {label}
       </span>
       {icon && <span className="text-lg">{icon}</span>}
@@ -217,14 +217,14 @@ function RawMaterialReportAndAnalysisDefaultPage() {
   const materialUsageBreakdown = report.material_usage_breakdown || [];
 
   return (
-    <div className="max-w-7xl mx-auto p-6 lg:p-8">
+    <div className="space-y-6 lg:p-8">
       {/* Header */}
       <div className="flex justify-between items-start mb-7 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
             Raw Material Usage Analytics
           </h1>
-          <p className="text-sm text-gray-500 mt-1 font-mono">
+          <p className="text-sm text-muted-foreground mt-1 font-mono">
             Track material consumption & investment trends
           </p>
         </div>
@@ -269,9 +269,9 @@ function RawMaterialReportAndAnalysisDefaultPage() {
       </div>
 
       {/* All-time Investment Stats */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-5 mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Lifetime Investment Analysis
           </h3>
           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-full">
@@ -287,11 +287,11 @@ function RawMaterialReportAndAnalysisDefaultPage() {
             ["Highest Unit Cost", fmtRs(statsCard.most_expensive_unit_cost)],
             ["Most Expensive Material", statsCard.most_expensive_material_name || "—"],
           ].map(([label, val]) => (
-            <div key={label} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <div key={label} className="bg-muted/30 rounded-lg p-3 border border-border">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
                 {label}
               </div>
-              <div className="text-md font-bold font-mono text-gray-900 break-words">
+              <div className="text-md font-bold font-mono text-foreground break-words">
                 {val}
               </div>
             </div>
@@ -300,13 +300,13 @@ function RawMaterialReportAndAnalysisDefaultPage() {
       </div>
 
       {/* Divider */}
-      <hr className="my-6 border-gray-200" />
+      <hr className="my-6 border-border" />
 
       {/* Usage Trend Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-5 mb-6 shadow-sm">
         <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Material Consumption Trend
             </h3>
             <span className="px-2 py-1 bg-orange-50 text-orange-600 text-xs font-mono rounded-full capitalize">
@@ -323,8 +323,8 @@ function RawMaterialReportAndAnalysisDefaultPage() {
                   className={`
                     px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize
                     ${chartMode === mode 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-card text-foreground shadow-sm' 
+                      : 'text-gray-600 hover:text-foreground'
                     }
                   `}
                 >
@@ -341,8 +341,8 @@ function RawMaterialReportAndAnalysisDefaultPage() {
                   className={`
                     px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize
                     ${trendFilter === filter 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-card text-foreground shadow-sm' 
+                      : 'text-gray-600 hover:text-foreground'
                     }
                   `}
                 >
@@ -449,9 +449,9 @@ function RawMaterialReportAndAnalysisDefaultPage() {
       </div>
 
       {/* Top Used Materials - Most Consumed */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-5 mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Most Consumed Materials
           </h3>
           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-full">
@@ -467,20 +467,20 @@ function RawMaterialReportAndAnalysisDefaultPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Material</th>
-                  <th className="text-right py-3 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Unit</th>
-                  <th className="text-right py-3 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity Consumed</th>
-                  <th className="text-right py-3 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Investment</th>
-                  <th className="text-right py-3 px-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Affected Orders</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Material</th>
+                  <th className="text-right py-3 px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Unit</th>
+                  <th className="text-right py-3 px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Quantity Consumed</th>
+                  <th className="text-right py-3 px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Investment</th>
+                  <th className="text-right py-3 px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Affected Orders</th>
                 </tr>
               </thead>
               <tbody>
                 {topUsedMaterials.map((material: NewTopUsedRawMaterial, i: number) => (
-                  <tr key={material.material_id || i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-2 font-medium text-gray-900">{material.material_name}</td>
+                  <tr key={material.material_id || i} className="border-b border-gray-100 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 px-2 font-medium text-foreground">{material.material_name}</td>
                     <td className="py-3 px-2 text-right text-gray-600">{material.unit || "—"}</td>
-                    <td className="py-3 px-2 text-right font-mono font-medium text-gray-900">{fmtNum(material.total_quantity_used)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-medium text-foreground">{fmtNum(material.total_quantity_used)}</td>
                     <td className="py-3 px-2 text-right font-mono font-medium" style={{ color: COLORS[0] }}>{fmtRs(material.total_cost)}</td>
                     <td className="py-3 px-2 text-right font-mono text-gray-600">{fmtNum(material.affected_orders)}</td>
                   </tr>
@@ -492,9 +492,9 @@ function RawMaterialReportAndAnalysisDefaultPage() {
       </div>
 
       {/* Material-wise Investment Breakdown */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Investment Breakdown by Material
           </h3>
           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-full">
@@ -512,7 +512,7 @@ function RawMaterialReportAndAnalysisDefaultPage() {
               <div key={material.material_id || i}>
                 <div className="flex justify-between items-baseline mb-1.5">
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-700">
+                    <span className="text-sm font-semibold text-foreground">
                       {material.material_name}
                     </span>
                     <span className="text-xs text-gray-400 ml-2">
@@ -541,7 +541,7 @@ function RawMaterialReportAndAnalysisDefaultPage() {
                       }}
                     />
                   </div>
-                  <span className="text-xs font-mono text-gray-500 min-w-[45px] text-right">
+                  <span className="text-xs font-mono text-muted-foreground min-w-[45px] text-right">
                     {material.usage_percent?.toFixed(1) || 0}%
                   </span>
                 </div>

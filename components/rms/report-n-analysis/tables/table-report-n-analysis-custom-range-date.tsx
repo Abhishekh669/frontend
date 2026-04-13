@@ -118,7 +118,7 @@ const Sk = ({ className }: { className?: string }) => (
   <div className={cn("animate-pulse rounded-md bg-muted", className)} />
 );
 const DashboardSkeleton = () => (
-  <div className="max-w-6xl mx-auto p-6 space-y-5">
+  <div className="space-y-6">
     <div className="space-y-2"><Sk className="h-7 w-52" /><Sk className="h-3.5 w-36" /></div>
     <Sk className="h-36 w-full" />
     <div className="grid grid-cols-4 gap-3">{Array(4).fill(0).map((_, i) => <Sk key={i} className="h-24" />)}</div>
@@ -132,7 +132,7 @@ const DashboardSkeleton = () => (
 const KpiCard = ({ label, value, sub, accent, icon }: {
   label: string; value: string; sub?: string; accent?: string; icon?: string;
 }) => (
-  <div className="bg-secondary/60 rounded-xl p-4 space-y-1.5">
+  <div className="bg-muted/30 rounded-xl border border-border/50 p-4 space-y-1.5">
     <div className="flex justify-between items-center">
       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       {icon && <span className="text-base opacity-60">{icon}</span>}
@@ -147,8 +147,8 @@ const Chip = ({ children, variant = "default" }: {
 }) => {
   const cls = {
     default: "bg-secondary text-muted-foreground",
-    accent: "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-    success: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
+    accent: "bg-accent/15 text-accent",
+    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   }[variant];
   return <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full font-mono", cls)}>{children}</span>;
 };
@@ -430,7 +430,7 @@ const PeakHourHeatmap = ({
               <div
                 key={h}
                 className={`flex items-center gap-3 rounded-lg px-2 py-1 transition-colors
-                  ${isPeak ? "bg-orange-50 dark:bg-orange-950/20" : "hover:bg-secondary/40"}`}
+                  ${isPeak ? "bg-orange-50 dark:bg-orange-950/20" : "hover:bg-muted/40"}`}
               >
                 <span className="w-14 text-right text-[11px] font-mono text-muted-foreground shrink-0">{fmtHour(h)}</span>
                 <div className="flex-1 h-6 bg-secondary rounded-md overflow-hidden relative">
@@ -570,7 +570,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
   if (isLoading && !data) return <DashboardSkeleton />;
 
   if (isError) return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="space-y-6">
       <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 flex gap-4">
         <span className="text-xl">⚠️</span>
         <div>
@@ -584,7 +584,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
   const report: NewCustomRangeTableResponse | undefined = data?.report;
 
   if (!report) return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="space-y-6">
       <div className="bg-muted rounded-xl p-6 text-center">
         <p className="font-medium mb-2">No data for selected range</p>
         <Button variant="outline" size="sm" onClick={handleClear}>Reset filters</Button>
@@ -607,7 +607,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
     }));
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-5">
+    <div className="space-y-6">
 
       {/* ── Header ── */}
       <div className="flex justify-between items-start gap-4 flex-wrap">
@@ -616,7 +616,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
           <p className="text-xs text-muted-foreground mt-1 font-mono">Custom date range · Nepalese Rupee (NPR)</p>
         </div>
         {ov?.peak_occupancy_hour != null && ov.peak_occupancy_hour >= 0 && (
-          <div className="text-xs font-semibold font-mono px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+          <div className="text-xs font-semibold font-mono px-3 py-1.5 rounded-full bg-accent/15 text-accent border border-orange-200 dark:border-orange-800">
             {/* FIX: normalize peak occupancy rate in header badge */}
             🔥 Peak hour: {fmtHour(ov.peak_occupancy_hour)} — {fmtPct(ov.peak_occupancy_rate)} occupancy
           </div>
@@ -624,7 +624,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="bg-background border border-border rounded-xl p-5 space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Date range &amp; filters</span>
@@ -632,7 +632,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
         <div className="flex flex-wrap gap-2">
           {presets.map(p => (
             <Button key={p.key} variant="outline" size="sm" onClick={() => handlePreset(p)} disabled={loading}
-              className={cn("rounded-lg text-xs h-7 px-3", activePreset === p.key && "bg-primary text-primary-foreground border-primary hover:bg-primary/90")}>
+              className={cn("rounded-xl text-xs h-7 px-3", activePreset === p.key && "bg-primary text-primary-foreground border-primary hover:bg-primary/90")}>
               {p.label}
             </Button>
           ))}
@@ -643,12 +643,12 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" disabled={loading}
-                  className={cn("w-full h-9 justify-start rounded-lg text-sm font-normal", !fromDate && "text-muted-foreground")}>
+                  className={cn("w-full h-9 justify-start rounded-xl text-sm font-normal", !fromDate && "text-muted-foreground")}>
                   <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   {fromDate ? format(fromDate, "yyyy-MM-dd") : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 rounded-xl border shadow-lg">
+              <PopoverContent className="p-0 rounded-2xl border border-border shadow-xl">
                 <CalendarComponent mode="single" selected={fromDate} onSelect={setFromDate} disabled={{ after: today }} />
               </PopoverContent>
             </Popover>
@@ -658,12 +658,12 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" disabled={loading}
-                  className={cn("w-full h-9 justify-start rounded-lg text-sm font-normal", !toDate && "text-muted-foreground")}>
+                  className={cn("w-full h-9 justify-start rounded-xl text-sm font-normal", !toDate && "text-muted-foreground")}>
                   <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   {toDate ? format(toDate, "yyyy-MM-dd") : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 rounded-xl border shadow-lg">
+              <PopoverContent className="p-0 rounded-2xl border border-border shadow-xl">
                 <CalendarComponent mode="single" selected={toDate} onSelect={setToDate} disabled={{ after: today }} />
               </PopoverContent>
             </Popover>
@@ -672,7 +672,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
             <Label className="text-xs text-muted-foreground">Items per page</Label>
             <Select value={String(query.limit)} disabled={loading}
               onValueChange={v => setQuery(prev => ({ ...prev, limit: Number(v), page: 0 }))}>
-              <SelectTrigger className="h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue /></SelectTrigger>
               <SelectContent className="rounded-xl">
                 {[10, 20, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>)}
               </SelectContent>
@@ -680,10 +680,10 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
           </div>
           <div className="flex gap-2">
             <Button onClick={() => applyFilters()} disabled={!!dateError || !fromDate || !toDate || loading}
-              className="h-9 rounded-lg flex-1 text-sm">
+              className="h-9 rounded-xl flex-1 text-sm">
               {loading ? "Loading…" : "Apply filters"}
             </Button>
-            <Button variant="outline" onClick={handleClear} disabled={loading} className="h-9 rounded-lg px-3">
+            <Button variant="outline" onClick={handleClear} disabled={loading} className="h-9 rounded-xl px-3">
               <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
             </Button>
           </div>
@@ -723,7 +723,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
       </div>
 
       {/* ── All-time Stats ── */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">All-time statistics</span>
           <Chip>Global</Chip>
@@ -739,7 +739,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
             ["Top Count", fmtNum(sc?.most_used_table_count)],
             ["Busiest Day", sc?.busiest_day ?? "—"],
           ] as [string, string][]).map(([l, v]) => (
-            <div key={l} className="bg-secondary/60 rounded-lg p-3">
+            <div key={l} className="bg-muted/30 rounded-xl border border-border/50 p-3">
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">{l}</p>
               <p className="text-sm font-semibold font-mono">{v}</p>
             </div>
@@ -756,7 +756,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
         Use the Revenue / Sessions / Occupancy % buttons to switch what the Y-axis shows.
         Use Daily / Weekly / Monthly / Yearly to change the X-axis granularity.
       */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex justify-between items-center flex-wrap gap-3 mb-1">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Table trend over time</span>
@@ -764,7 +764,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
             {paginationInfo && <Chip>{paginationInfo.total} records</Chip>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {([
                 { key: "total_revenue" as const, label: "Revenue" },
                 { key: "total_sessions" as const, label: "Sessions" },
@@ -772,16 +772,16 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
               ]).map(m => (
                 <button key={m.key} onClick={() => setTrendMode(m.key)}
                   className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md transition-all",
-                    trendMode === m.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                    trendMode === m.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
                   {m.label}
                 </button>
               ))}
             </div>
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {(["daily", "weekly", "monthly", "yearly"] as const).map(f => (
                 <button key={f} onClick={() => { setTrendFilter(f); setQuery(prev => ({ ...prev, page: 0 })); }}
-                  className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md capitalize transition-all",
-                    trendFilter === f ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                  className={cn("px-3 h-7 text-[11px] font-medium rounded-lg capitalize transition-all",
+                    trendFilter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
                   {f}
                 </button>
               ))}
@@ -854,13 +854,13 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
                 <PaginationItem>
                   <PaginationPrevious href="#"
                     onClick={e => { e.preventDefault(); if (!isFirstPage) setQuery(p => ({ ...p, page: p.page - 1 })); }}
-                    className={cn("rounded-lg text-xs", isFirstPage && "pointer-events-none opacity-40")} />
+                    className={cn("rounded-xl text-xs", isFirstPage && "pointer-events-none opacity-40")} />
                 </PaginationItem>
                 {visiblePages().map(n => (
                   <PaginationItem key={n}>
                     <PaginationLink href="#" onClick={e => { e.preventDefault(); setQuery(p => ({ ...p, page: n })); }}
-                      className={cn("rounded-lg text-xs border",
-                        currentPage === n ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary")}>
+                      className={cn("rounded-xl text-xs border",
+                        currentPage === n ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted")}>
                       {n + 1}
                     </PaginationLink>
                   </PaginationItem>
@@ -868,7 +868,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
                 <PaginationItem>
                   <PaginationNext href="#"
                     onClick={e => { e.preventDefault(); if (!isLastPage) setQuery(p => ({ ...p, page: p.page + 1 })); }}
-                    className={cn("rounded-lg text-xs", isLastPage && "pointer-events-none opacity-40")} />
+                    className={cn("rounded-xl text-xs", isLastPage && "pointer-events-none opacity-40")} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
@@ -877,7 +877,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
       </div>
 
       {/* ── Peak Hour Heatmap ── */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-5">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Hourly activity &amp; table occupancy</span>
           <Chip variant="accent">When is the restaurant busiest?</Chip>
@@ -890,7 +890,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
 
       {/* ── Top Tables + Revenue Share ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Top performing tables</span>
             <Chip>{report.top_tables?.length ?? 0}</Chip>
@@ -920,7 +920,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
                         </span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-700"
                         style={{ width: `${maxRev ? ((t.total_revenue ?? 0) / maxRev) * 100 : 0}%`, background: COLORS[i % COLORS.length] }} />
                     </div>
@@ -931,7 +931,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
           )}
         </div>
 
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue share by table</span>
             <Chip>{pieData.length} tables</Chip>
@@ -977,7 +977,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
 
       {/* ── Usage Breakdown Table ── */}
       {(report.table_usage_breakdown?.length ?? 0) > 0 && (
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Table usage breakdown</span>
             <Chip>{report.table_usage_breakdown.length} tables</Chip>
@@ -993,7 +993,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {report.table_usage_breakdown.map((t: NewTableUsageBreakdown, i: number) => (
-                  <tr key={t.table_number} className="hover:bg-secondary/30 transition-colors">
+                  <tr key={t.table_number} className="hover:bg-muted/30 transition-colors">
                     <td className="py-2.5 pr-4">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
@@ -1007,7 +1007,7 @@ function TableReportAndAnalysisCustomDateRangeDatePage() {
                     <td className="py-2.5 pr-4 font-mono font-semibold text-[#d85a30]">{fmtRs(t.total_revenue)}</td>
                     <td className="py-2.5 pr-4">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
                           {/* FIX: normalize usage_percent */}
                           <div className="h-full rounded-full"
                             style={{ width: `${Math.min(normalizePct(t.usage_percent), 100)}%`, background: COLORS[i % COLORS.length] }} />

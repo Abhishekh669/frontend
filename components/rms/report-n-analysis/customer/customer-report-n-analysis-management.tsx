@@ -1,42 +1,52 @@
-
 "use client";
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CustomerReportAndAnalysisDefaultPage from "./customer-report-n-analysis-default";
 import CustomerReportAndAnalysisCustomDateRangePage from "./customer-report-n-analysis-custom-date-range";
-
+import { Database, Calendar } from "lucide-react";
 
 function CustomerReportAndAnalysisManagementPage() {
-   const [activeTab, setActiveTab] = useState<"default" | "custom">("default");
+  const [activeTab, setActiveTab] = useState<"default" | "custom">("default");
 
   return (
-    <div className="space-y-5">
-      {/* Tabs Navigation */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "default" | "custom")} className="w-full">
-            <TabsList className="grid w-full max-w-[300px] grid-cols-2 mt-4">
-              <TabsTrigger value="default" className="text-sm">
-                Default (Cached)
-              </TabsTrigger>
-              <TabsTrigger value="custom" className="text-sm">
-                Custom Range
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="default" className="mt-5">
-                <CustomerReportAndAnalysisDefaultPage />
-            </TabsContent>
-
-            <TabsContent value="custom" className="mt-5">
-              <CustomerReportAndAnalysisCustomDateRangePage />
-            </TabsContent>
-          </Tabs>
+    <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "default" | "custom")} className="w-full">
+        {/* Premium Tab Strip */}
+        <div className="flex items-center rounded-xl border border-border bg-muted/40 p-0.5 gap-0.5 w-fit">
+          <button
+            onClick={() => setActiveTab("default")}
+            className={`flex items-center gap-1.5 px-4 h-8 text-[11px] font-medium rounded-lg transition-all ${
+              activeTab === "default"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            Default (Cached)
+          </button>
+          <button
+            onClick={() => setActiveTab("custom")}
+            className={`flex items-center gap-1.5 px-4 h-8 text-[11px] font-medium rounded-lg transition-all ${
+              activeTab === "custom"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            Custom Range
+          </button>
         </div>
-      </div>
+
+        <TabsContent value="default" className="mt-0">
+          <CustomerReportAndAnalysisDefaultPage />
+        </TabsContent>
+        <TabsContent value="custom" className="mt-0">
+          <CustomerReportAndAnalysisCustomDateRangePage />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-export default CustomerReportAndAnalysisManagementPage
+export default CustomerReportAndAnalysisManagementPage;

@@ -63,7 +63,7 @@ const COLORS = ["#d85a30", "#378add", "#1d9e75", "#534ab7", "#ba7517", "#993556"
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-popover text-popover-foreground border border-border rounded-lg p-3 shadow-md min-w-[160px]">
+    <div className="bg-card border border-border rounded-xl p-3 shadow-md min-w-[160px]">
       <p className="text-xs text-muted-foreground mb-2 font-mono">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color }} className="text-sm font-semibold font-mono">
@@ -84,7 +84,7 @@ const Skeleton = ({ className }: { className?: string }) => (
 );
 
 const DashboardSkeleton = () => (
-  <div className="max-w-6xl mx-auto p-6 space-y-5">
+  <div className="space-y-6">
     <div className="flex justify-between">
       <div className="space-y-2"><Skeleton className="h-7 w-52" /><Skeleton className="h-3.5 w-36" /></div>
       <Skeleton className="h-8 w-28" />
@@ -98,7 +98,7 @@ const DashboardSkeleton = () => (
 
 // ─── Stats Card ───────────────────────────────────────────────────────────────
 const StatsCard = ({ title, value, subtitle, icon, trend }: any) => (
-  <div className="bg-secondary/60 rounded-xl p-4 space-y-2">
+  <div className="bg-muted/30 rounded-xl border border-border/50 p-4 space-y-2">
     <div className="flex justify-between items-start">
       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
       {icon}
@@ -117,7 +117,7 @@ const StatsCard = ({ title, value, subtitle, icon, trend }: any) => (
 const Chip = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "accent" }) => (
   <span className={cn(
     "text-[10px] font-medium px-2 py-0.5 rounded-full font-mono",
-    variant === "accent" ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300" : "bg-secondary text-muted-foreground"
+    variant === "accent" ? "bg-accent/15 text-accent" : "bg-secondary text-muted-foreground"
   )}>
     {children}
   </span>
@@ -223,7 +223,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
 
   if (isError) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="space-y-6">
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6">
           <p className="font-medium text-destructive mb-2">Failed to load raw material report</p>
           <p className="text-sm text-muted-foreground mb-4">{error?.message || "An error occurred"}</p>
@@ -238,7 +238,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
   const report = data?.report;
   if (!report) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="space-y-6">
         <div className="bg-muted rounded-xl p-6 text-center">
           <p className="font-medium mb-2">No data available for selected range</p>
           <Button variant="outline" size="sm" onClick={handleClear}>Reset filters</Button>
@@ -276,7 +276,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
   const dailyUsage = report.daily_usage_summary ?? [];
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-5">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Raw Material Usage Report</h1>
@@ -284,7 +284,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* Date Filter */}
-      <div className="bg-background border border-border rounded-xl p-5 space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Date Range</span>
@@ -293,7 +293,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
         <div className="flex flex-wrap gap-2">
           {presets.map(p => (
             <Button key={p.key} variant="outline" size="sm" onClick={() => handlePreset(p)} disabled={loading}
-              className={cn("rounded-lg text-xs h-7 px-3", activePreset === p.key && "bg-primary text-primary-foreground")}>
+              className={cn("rounded-xl text-xs h-7 px-3", activePreset === p.key && "bg-primary text-primary-foreground")}>
               {p.label}
             </Button>
           ))}
@@ -379,39 +379,39 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* All-time Investment Stats */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">All-time Investment Summary</span>
           <Chip>Lifetime</Chip>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Total Materials Used</p>
             <p className="text-sm font-semibold font-mono">{formatNumber(statsCard.total_material_used_all_time, " units")}</p>
           </div>
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Total Investment</p>
             <p className="text-sm font-semibold font-mono">{formatCurrency(statsCard.total_investment_all_time)}</p>
           </div>
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Unique Materials</p>
             <p className="text-sm font-semibold font-mono">{formatNumber(statsCard.total_materials)}</p>
           </div>
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Highest Cost Material</p>
             <p className="text-sm font-semibold font-mono truncate" title={statsCard.most_expensive_material_name}>
               {statsCard.most_expensive_material_name || "—"}
             </p>
             <p className="text-[10px] text-muted-foreground">{formatCurrency(statsCard.most_expensive_unit_cost)}/unit</p>
           </div>
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Most Used All-time</p>
             <p className="text-sm font-semibold font-mono truncate" title={statsCard.most_used_material_name}>
               {statsCard.most_used_material_name || "—"}
             </p>
             <p className="text-[10px] text-muted-foreground">{formatNumber(statsCard.most_used_material_quantity)} units</p>
           </div>
-          <div className="bg-secondary/60 rounded-lg p-3">
+          <div className="bg-muted/30 rounded-xl border border-border/50 p-3">
             <p className="text-[10px] text-muted-foreground mb-1">Average Material Cost</p>
             <p className="text-sm font-semibold font-mono">{formatCurrency(statsCard.avg_material_value)}</p>
           </div>
@@ -419,14 +419,14 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* Usage Trend Chart */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex justify-between items-center flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Usage & Cost Trend</span>
             <Chip variant="accent">{trendFilter}</Chip>
           </div>
           <div className="flex gap-2">
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {(["usage", "cost", "both"] as const).map(m => (
                 <button key={m} onClick={() => setChartMetric(m)}
                   className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md capitalize",
@@ -435,7 +435,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {(["daily", "weekly", "monthly", "yearly"] as const).map(f => (
                 <button key={f} onClick={() => { setTrendFilter(f); setQuery(prev => ({ ...prev, page: 0 })); }}
                   className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md capitalize",
@@ -506,7 +506,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* Top Used Materials - Cost Focus */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Top Materials by Cost</span>
           <Chip>Highest investment</Chip>
@@ -544,7 +544,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* Material Usage Breakdown - Investment Percentage */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Investment Breakdown by Material</span>
           <Chip>Cost distribution</Chip>
@@ -565,7 +565,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all" 
                       style={{ width: `${Math.min(100, m.usage_percent)}%`, background: COLORS[i % COLORS.length] }} />
                   </div>
@@ -582,7 +582,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* Daily Usage - Shows consumption pattern over time */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Daily Consumption Pattern</span>
           <Chip variant="accent">Usage over time</Chip>
@@ -619,7 +619,7 @@ export default function RawMaterialReportAndAnalysisCustomDateRangePage() {
                 </thead>
                 <tbody>
                   {dailyUsage.map((d: NewDailyRawMaterialUsage) => (
-                    <tr key={d.usage_date} className="border-b border-border/50 hover:bg-secondary/30">
+                    <tr key={d.usage_date} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 font-mono text-xs">{format(parseISO(d.usage_date), "EEE, MMM d, yyyy")}</td>
                       <td className="py-2 text-right font-mono">{formatNumber(d.total_material_used)}</td>
                       <td className="py-2 text-right font-mono text-orange-600 dark:text-orange-400 font-semibold">

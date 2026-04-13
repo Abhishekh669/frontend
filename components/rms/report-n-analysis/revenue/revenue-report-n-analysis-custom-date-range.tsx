@@ -62,7 +62,7 @@ export type TrendType = "daily" | "weekly" | "monthly" | "yearly";
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-popover text-popover-foreground border border-border rounded-lg p-3 shadow-md min-w-[140px]">
+    <div className="bg-card border border-border rounded-xl p-3 shadow-md min-w-[140px]">
       <p className="text-xs text-muted-foreground mb-1.5 font-mono">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color }} className="text-sm font-semibold font-mono">
@@ -79,7 +79,7 @@ const PieTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
-    <div className="bg-popover text-popover-foreground border border-border rounded-lg p-3 shadow-md">
+    <div className="bg-card border border-border rounded-xl p-3 shadow-md">
       <p className="text-xs text-muted-foreground mb-1 font-mono">{getLabel(d.name)}</p>
       <p style={{ color: d.payload.fill }} className="text-sm font-semibold font-mono">
         {fmtRs(d.value)}
@@ -96,7 +96,7 @@ const Skeleton = ({ className }: { className?: string }) => (
   <div className={cn("animate-pulse rounded-md bg-muted", className)} />
 );
 const DashboardSkeleton = () => (
-  <div className="max-w-6xl mx-auto p-6 space-y-5">
+  <div className="space-y-6">
     <div className="flex justify-between">
       <div className="space-y-2"><Skeleton className="h-7 w-52" /><Skeleton className="h-3.5 w-36" /></div>
       <Skeleton className="h-8 w-28" />
@@ -114,7 +114,7 @@ const KpiCard = ({
 }: {
   label: string; value: string; sub?: string; accent?: string; icon?: string;
 }) => (
-  <div className="bg-secondary/60 rounded-xl p-4 space-y-1.5">
+  <div className="bg-muted/30 rounded-xl border border-border/50 p-4 space-y-1.5">
     <div className="flex justify-between items-center">
       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       {icon && <span className="text-base opacity-60">{icon}</span>}
@@ -133,8 +133,8 @@ const Chip = ({ children, variant = "default" }: {
 }) => {
   const cls = {
     default: "bg-secondary text-muted-foreground",
-    accent: "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-    warn: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+    accent: "bg-accent/15 text-accent",
+    warn: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   }[variant];
   return (
     <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full font-mono", cls)}>
@@ -266,7 +266,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
   if (isLoading && !data) return <DashboardSkeleton />;
 
   if (isError) return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="space-y-6">
       <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 flex gap-4">
         <span className="text-xl">⚠️</span>
         <div>
@@ -279,7 +279,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
 
   const report = data?.report;
   if (!report) return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="space-y-6">
       <div className="bg-muted rounded-xl p-6 text-center">
         <p className="font-medium mb-2">No data for selected range</p>
         <Button variant="outline" size="sm" onClick={handleClear}>Reset filters</Button>
@@ -295,7 +295,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
     : 1;
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-5">
+    <div className="space-y-6">
       {/* ── Header ── */}
       <div className="flex justify-between items-start gap-4 flex-wrap">
         <div>
@@ -308,8 +308,8 @@ export default function ReportAndAnalysisCustomDateRangePage() {
           <span className={cn(
             "text-xs font-semibold font-mono px-3 py-1.5 rounded-full",
             ov.growth_percent >= 0
-              ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-              : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "bg-rose-500/10 text-rose-600 dark:text-rose-400",
           )}>
             {ov.growth_percent >= 0 ? "↑" : "↓"} {Math.abs(ov.growth_percent).toFixed(1)}% vs prior period
           </span>
@@ -317,7 +317,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* ── Filter bar ── */}
-      <div className="bg-background border border-border rounded-xl p-5 space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -335,7 +335,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
               onClick={() => handlePreset(p)}
               disabled={loading}
               className={cn(
-                "rounded-lg text-xs h-7 px-3",
+                "rounded-xl text-xs h-7 px-3",
                 activePreset === p.key && "bg-primary text-primary-foreground border-primary hover:bg-primary/90",
               )}
             >
@@ -351,12 +351,12 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" disabled={loading}
-                  className={cn("w-full h-9 justify-start rounded-lg text-sm font-normal", !fromDate && "text-muted-foreground")}>
+                  className={cn("w-full h-9 justify-start rounded-xl text-sm font-normal", !fromDate && "text-muted-foreground")}>
                   <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   {fromDate ? format(fromDate, "yyyy-MM-dd") : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 rounded-xl border shadow-lg">
+              <PopoverContent className="p-0 rounded-2xl border border-border shadow-xl">
                 <CalendarComponent mode="single" selected={fromDate} onSelect={setFromDate}
                   disabled={{ after: today }} />
               </PopoverContent>
@@ -369,12 +369,12 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" disabled={loading}
-                  className={cn("w-full h-9 justify-start rounded-lg text-sm font-normal", !toDate && "text-muted-foreground")}>
+                  className={cn("w-full h-9 justify-start rounded-xl text-sm font-normal", !toDate && "text-muted-foreground")}>
                   <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                   {toDate ? format(toDate, "yyyy-MM-dd") : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 rounded-xl border shadow-lg">
+              <PopoverContent className="p-0 rounded-2xl border border-border shadow-xl">
                 <CalendarComponent mode="single" selected={toDate} onSelect={setToDate}
                   disabled={{ after: today }} />
               </PopoverContent>
@@ -386,7 +386,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             <Label className="text-xs text-muted-foreground">Items per page</Label>
             <Select value={String(query.limit)} disabled={loading}
               onValueChange={v => setQuery(prev => ({ ...prev, limit: Number(v), page: 0 }))}>
-              <SelectTrigger className="h-9 rounded-lg text-sm">
+              <SelectTrigger className="h-9 rounded-xl text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -402,12 +402,12 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             <Button
               onClick={() => applyFilters()}
               disabled={!!dateError || !fromDate || !toDate || loading}
-              className="h-9 rounded-lg flex-1 text-sm"
+              className="h-9 rounded-xl flex-1 text-sm"
             >
               {loading ? "Loading…" : "Apply filters"}
             </Button>
             <Button variant="outline" onClick={handleClear} disabled={loading}
-              className="h-9 rounded-lg px-3">
+              className="h-9 rounded-xl px-3">
               <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
             </Button>
           </div>
@@ -431,7 +431,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* ── All-time stats ── */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
             All-time statistics
@@ -448,7 +448,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             ["Customers", fmtNum(sc.total_customers)],
             ["Discount %", `${(sc.discount_rate_percent ?? 0).toFixed(1)}%`],
           ].map(([l, v]) => (
-            <div key={l} className="bg-secondary/60 rounded-lg p-3">
+            <div key={l} className="bg-muted/30 rounded-xl border border-border/50 p-3">
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">{l}</p>
               <p className="text-sm font-semibold font-mono">{v}</p>
             </div>
@@ -459,7 +459,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
       <hr className="border-border" />
 
       {/* ── Trend chart ── */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex justify-between items-center flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -472,13 +472,13 @@ export default function ReportAndAnalysisCustomDateRangePage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {/* Chart mode */}
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {(["revenue", "orders", "both"] as const).map(m => (
                 <button key={m} onClick={() => setChartMode(m)}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-medium rounded-md capitalize transition-all",
+                    "px-3 h-7 text-[11px] font-medium rounded-lg capitalize transition-all",
                     chartMode === m
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
                   )}>
                   {m}
@@ -486,13 +486,13 @@ export default function ReportAndAnalysisCustomDateRangePage() {
               ))}
             </div>
             {/* Granularity */}
-            <div className="flex gap-0.5 bg-secondary p-1 rounded-lg">
+            <div className="flex gap-0.5 bg-muted/40 p-0.5 rounded-xl border border-border">
               {(["daily", "weekly", "monthly", "yearly"] as const).map(f => (
                 <button key={f} onClick={() => { setTrendFilter(f); setQuery(prev => ({ ...prev, page: 0 })); }}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-medium rounded-md capitalize transition-all",
+                    "px-3 h-7 text-[11px] font-medium rounded-lg capitalize transition-all",
                     trendFilter === f
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
                   )}>
                   {f}
@@ -557,16 +557,16 @@ export default function ReportAndAnalysisCustomDateRangePage() {
                 <PaginationItem>
                   <PaginationPrevious href="#"
                     onClick={e => { e.preventDefault(); if (!isFirstPage) setQuery(p => ({ ...p, page: p.page - 1 })); }}
-                    className={cn("rounded-lg text-xs", isFirstPage && "pointer-events-none opacity-40")} />
+                    className={cn("rounded-xl text-xs", isFirstPage && "pointer-events-none opacity-40")} />
                 </PaginationItem>
                 {visiblePages().map(n => (
                   <PaginationItem key={n}>
                     <PaginationLink href="#"
                       onClick={e => { e.preventDefault(); setQuery(p => ({ ...p, page: n })); }}
-                      className={cn("rounded-lg text-xs border",
+                      className={cn("rounded-xl text-xs border",
                         currentPage === n
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border hover:bg-secondary"
+                          : "border-border hover:bg-muted"
                       )}>
                       {n + 1}
                     </PaginationLink>
@@ -575,7 +575,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
                 <PaginationItem>
                   <PaginationNext href="#"
                     onClick={e => { e.preventDefault(); if (!isLastPage) setQuery(p => ({ ...p, page: p.page + 1 })); }}
-                    className={cn("rounded-lg text-xs", isLastPage && "pointer-events-none opacity-40")} />
+                    className={cn("rounded-xl text-xs", isLastPage && "pointer-events-none opacity-40")} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
@@ -585,7 +585,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
 
       {/* ── Payment methods + Gateways ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Payment methods</span>
             <Chip>{report.payment_methods?.length ?? 0} types</Chip>
@@ -621,7 +621,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
           )}
         </div>
 
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Online gateways</span>
             <Chip>{report.gateways?.length ?? 0}</Chip>
@@ -640,7 +640,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
                         style={{ color: COLORS[i % COLORS.length] }}>{fmtRs(g.revenue)}</span>
                     </div>
                   </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${g.percent ?? 0}%`, background: COLORS[i % COLORS.length] }} />
                   </div>
@@ -653,7 +653,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
 
       {/* ── Peak hours + days ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">Peak hours</p>
           {!report.peak_hours?.length ? (
             <div className="h-52 flex items-center justify-center text-muted-foreground text-sm">No data</div>
@@ -674,7 +674,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
           )}
         </div>
 
-        <div className="bg-background border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">Peak days</p>
           {!report.peak_days?.length ? (
             <div className="h-52 flex items-center justify-center text-muted-foreground text-sm">No data</div>
@@ -685,7 +685,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
                   <span className="w-8 text-xs font-medium text-muted-foreground font-mono uppercase">
                     {d.day_of_week?.slice(0, 3)}
                   </span>
-                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${maxPeakRev ? (d.revenue / maxPeakRev) * 100 : 0}%`, background: COLORS[i % COLORS.length] }} />
                   </div>
@@ -698,7 +698,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
       </div>
 
       {/* ── Discount analysis ── */}
-      <div className="bg-background border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Discount analysis</span>
           <Chip variant="warn">{(disc.discount_rate_percent ?? 0).toFixed(1)}% rate</Chip>
@@ -712,7 +712,7 @@ export default function ReportAndAnalysisCustomDateRangePage() {
             ["Orders w/ discount", fmtNum(disc.orders_with_discount), "#185fa5"],
             ["Total orders", fmtNum(disc.total_orders), "var(--foreground)"],
           ].map(([l, v, c]) => (
-            <div key={l} className="bg-secondary/60 rounded-lg p-3">
+            <div key={l} className="bg-muted/30 rounded-xl border border-border/50 p-3">
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">{l}</p>
               <p className="text-sm font-semibold font-mono" style={{ color: c as string }}>{v}</p>
             </div>
