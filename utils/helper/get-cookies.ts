@@ -10,3 +10,10 @@ export const get_cookies = async(name : string) =>{
 }
 
 
+
+export const delete_cookie = async(name : string) =>{
+    const cookie_store = await cookies();
+    cookie_store.delete(name);
+    return true;
+}
+

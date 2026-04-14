@@ -3,6 +3,7 @@ import { getUserFromTokenAction } from "@/utils/actions/user/user.get.action";
 import { hasPermission } from "@/utils/helper/check-permission";
 import { FoodCategoryManagementAction } from "@/utils/rbac/role-n-permissiona";
 import { User } from "@/utils/types/user.types";
+import { redirect } from "next/navigation";
 import React, { Suspense } from "react"
 
 interface LayoutProps {
@@ -11,10 +12,11 @@ interface LayoutProps {
 }
 
 export default async function Layout({ children, params }: LayoutProps) {
-  const data = await getUserFromTokenAction();
-  if (!data.data) {
-    return null;
-  }
+ 
+    const data = await getUserFromTokenAction();
+ if(!data?.success || !data?.data){
+       redirect("/login")
+    }
   const user = data.data as User
   if (!hasPermission(user.role, FoodCategoryManagementAction.VIEW_CATEGORY)) {
     return null;
@@ -26,4 +28,5 @@ export default async function Layout({ children, params }: LayoutProps) {
       </div>
     </Suspense>
   )
+ 
 }

@@ -83,6 +83,48 @@ export const getUserFromTokenAction = async ()  : Promise<ActionResponse>=>{
 
     } catch (error) {
         error = getErrorMessage(error);
-       throw new Error(error as string)
+        // throw new Error(error as string)
+            return {
+                error : error as string,
+                success :false
+            }
+    }
+}
+
+
+export const getUserFromTokenActionForHook = async ()  =>{
+    try {
+        const user_token = await get_cookies("user_token")
+        if (!user_token) {
+            throw new Error("user not authorized")
+        }
+        const res = await axios.get(`${process.env.NEXT_BACKEND_URL}/api/v1/user-service/get-user-from-token`, {
+
+            headers: {
+                Authorization: `Bearer ${user_token}`,
+            },
+            withCredentials: true
+
+        })
+        const data = res.data;
+
+        if (!data.success) {
+            throw new Error(data.error)
+        }
+
+
+        return {
+            success: true,
+            user : data.user,
+        }
+
+    } catch (error) {
+        error = getErrorMessage(error);
+        console.log("error in getting user from token for hook : ", error)
+        return {
+            success: false,
+            user: null,
+            error: error as string,
+        }
     }
 }

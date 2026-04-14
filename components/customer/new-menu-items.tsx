@@ -854,8 +854,9 @@ function OrderItemRow({ item }: { item: OrderItemType }) {
 
 function OrderCard({ order }: { order: CustomerOrderRequest }) {
   const safeItems: OrderItemType[] = order.order_items ?? [];
+  const activeItems = safeItems.filter((i) => i.status !== "cancelled");
   const progress = calcProgress(safeItems);
-  const totalAmount = safeItems.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 0), 0);
+  const totalAmount = activeItems.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 0), 0);
   const completedCount = safeItems.filter((i) => i.status === "completed").length;
   const totalCount = safeItems.filter((i) => i.status !== "cancelled").length;
 

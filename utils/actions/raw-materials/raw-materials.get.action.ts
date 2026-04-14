@@ -10,7 +10,7 @@ export const getRawMaterials = async(query : RawMaterialQuery) =>{
     const {page = 0, limit = 20, search = "", oldFirst = false, startingPrice = 0, endingPrice = 100_000_000, fromDate  , toDate}  = query
     try {
         const user_token = await get_cookies("user_token")
-        if(user_token){
+        if(!user_token){
             throw new Error("user not authorized")
         }
         const res = await axios.get(`${process.env.NEXT_BACKEND_URL}/api/v1/raw-material-service/get-raw-materials`,{

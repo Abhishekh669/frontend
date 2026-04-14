@@ -15,6 +15,7 @@ import {
 } from '../ui/card'
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 
 function LoginCard() {
   const [email, setEmail] = useState("")
@@ -22,6 +23,7 @@ function LoginCard() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const loginHandler = async () => {
     setLoading(true)
@@ -29,7 +31,9 @@ function LoginCard() {
       const res = await loginAction(email, password)
       if (res.success && res.message) {
         toast.success(res.message)
-        router.push("/dashboard")
+        queryClient.removeQueries({ queryKey: ["get-user-from-token"] })
+        router.replace("/dashboard")
+        router.refresh()
       } else if (res.error) {
         throw new Error(res.error)
       }
@@ -40,6 +44,12 @@ function LoginCard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (loading) return
+    loginHandler()
   }
 
   return (
@@ -58,6 +68,7 @@ function LoginCard() {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        <form className="space-y-5" onSubmit={handleSubmit}>
         {/* Email */}
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={18} />
@@ -93,7 +104,7 @@ function LoginCard() {
 
         {/* Button */}
         <Button
-          onClick={loginHandler}
+          type="submit"
           disabled={loading}
           className="h-11 w-full rounded-xl bg-linear-to-r from-purple-600 to-blue-600 text-white hover:opacity-90"
         >
@@ -106,11 +117,12 @@ function LoginCard() {
             "Login"
           )}
         </Button>
+        </form>
       </CardContent>
 
       <CardFooter>
         <p className="w-full text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Don&apos;t have an account? <br />
+          Forget Your Password? <br />
           <span className="text-zinc-900 dark:text-white">Please contact admin</span>
         </p>
       </CardFooter>

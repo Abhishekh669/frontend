@@ -16,7 +16,9 @@ export interface UserPropsTypes {
 
 function RMSWrapper({ children }: { children: React.ReactNode }) {
     const router = useRouter();
-    const { data, isLoading, isError } = useGetUserFromToken(true);
+    const { data, isLoading } = useGetUserFromToken(true);
+    const user = data?.success ? data.user : null;
+
     const [collapsed, setCollapsed] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -25,25 +27,25 @@ function RMSWrapper({ children }: { children: React.ReactNode }) {
     }, []);
 
     useEffect(() => {
-        if (!isLoading && (isError || !data?.user)) {
+        if (!isLoading && !user) {
             router.replace("/login");
         }
-    }, [isLoading, isError, data, router]);
+    }, [isLoading, user, router]);
 
     if (!mounted || isLoading) {
         return <LoadingSkeleton />;
     }
 
-    if (isError || !data?.user) {
+    if (!user) {
         return null;
     }
 
-    const user: UserPropsTypes = {
-        id: data.user.id,
-        name: data.user.name,
-        image: data.user.image || "",
-        email: data.user.email,
-        role: data.user.role,
+    const sidebarUser: UserPropsTypes = {
+        id: user.id,
+        name: user.name,
+        image: user.image || "",
+        email: user.email,
+        role: user.role,
     };
 
     return (
@@ -51,7 +53,7 @@ function RMSWrapper({ children }: { children: React.ReactNode }) {
             <AppSidebar
                 collapsed={collapsed}
                 onToggle={() => setCollapsed(!collapsed)}
-                user={user}
+                user={sidebarUser}
             />
             <main
                 className={cn(

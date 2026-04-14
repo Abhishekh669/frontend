@@ -45,6 +45,13 @@ export const AttendanceManagementAction = {
 
 } as const
 
+export const SettingManagementAction = {
+  VIEW_SETTINGS: "view:settings" as const,
+  UPDATE_SETTINGS: "update:settings" as const,
+  UPDATE_RESTAURANT_INFORMATION: "update:restaurant_information" as const,
+  VIEW_RESTAURANT_INFORMATION: "view:restaurant_information" as const,
+}
+
 
 
 export const OrderManagementAction = {
@@ -132,19 +139,23 @@ export const routePermissions: Record<Role, Route[]> = {
     AvailableRoutes.TABLE_MANAGEMENT,
     AvailableRoutes.FOOD_CATEGORY,
     AvailableRoutes.CASHIER_ROUTE,
+    AvailableRoutes.SETTINGS,
   ],
   waiter: [
     AvailableRoutes.DASHBOARD,
     AvailableRoutes.ORDER_MANAGEMENT,
     AvailableRoutes.TABLE_MANAGEMENT,
     AvailableRoutes.FOOD_CATEGORY,
+    AvailableRoutes.SETTINGS,
   ],
   chef: [
     AvailableRoutes.ORDER_MANAGEMENT,
     AvailableRoutes.RAW_MATERIALS,
+    AvailableRoutes.SETTINGS,
   ],
   delivery_staff: [
     AvailableRoutes.ORDER_MANAGEMENT,
+    AvailableRoutes.SETTINGS,
   ],
   customer: [
   ],
@@ -220,7 +231,10 @@ export const rolePermissions: Record<Role, string[]> = {
     CashierManagementAction.DELETE_CASHIER,
 
     // Settings (still as string if no constant)
-    "view:settings",
+    SettingManagementAction.VIEW_SETTINGS,
+    SettingManagementAction.UPDATE_SETTINGS,
+    SettingManagementAction.UPDATE_RESTAURANT_INFORMATION,
+    SettingManagementAction.VIEW_RESTAURANT_INFORMATION,
   ],
 
   cashier: [
@@ -231,6 +245,7 @@ export const rolePermissions: Record<Role, string[]> = {
     TableManagementAction.VIEW_TABLES,
     FoodCategoryManagementAction.VIEW_MENU,
 
+
     AttendanceManagementAction.VIEW_ATTENDANCE,
     TableAction.VIEW_TABLES,
     TableAction.UPDATE_TABLES,
@@ -239,6 +254,10 @@ export const rolePermissions: Record<Role, string[]> = {
     CashierManagementAction.CREATE_CASHIER,
     CashierManagementAction.UPDATE_CASHIER,
     CashierManagementAction.DELETE_CASHIER,
+
+      SettingManagementAction.VIEW_SETTINGS,
+          SettingManagementAction.UPDATE_SETTINGS,
+      SettingManagementAction.VIEW_RESTAURANT_INFORMATION,
 
   ],
 
@@ -255,6 +274,9 @@ export const rolePermissions: Record<Role, string[]> = {
     TableAction.CREATE_TABLES,
     TableAction.VIEW_TABLES,
     TableAction.UPDATE_TABLES,
+    SettingManagementAction.VIEW_SETTINGS,
+          SettingManagementAction.UPDATE_SETTINGS,
+      SettingManagementAction.VIEW_RESTAURANT_INFORMATION,
 
 
   ],
@@ -263,9 +285,15 @@ export const rolePermissions: Record<Role, string[]> = {
     OrderManagementAction.VIEW_ORDERS,
     OrderManagementAction.UPDATE_ORDERS,
     RawMaterialManagementAction.VIEW_RAW_MATERIALS,
+    SettingManagementAction.VIEW_SETTINGS,
+          SettingManagementAction.UPDATE_SETTINGS,
+      SettingManagementAction.VIEW_RESTAURANT_INFORMATION,
 
     AttendanceManagementAction.VIEW_ATTENDANCE,
     TableAction.VIEW_TABLES,
+    SettingManagementAction.VIEW_SETTINGS,
+          SettingManagementAction.UPDATE_SETTINGS,
+      SettingManagementAction.VIEW_RESTAURANT_INFORMATION,
 
 
   ],

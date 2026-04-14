@@ -1,4 +1,4 @@
-import { AttendanceManagementAction, CashierManagementAction, EditDialogBoxAction, TableAction } from "../rbac/role-n-permissiona";
+import { AttendanceManagementAction, CashierManagementAction, EditDialogBoxAction, SettingManagementAction, TableAction } from "../rbac/role-n-permissiona";
 
 export type Role = "admin" | "manager" | "cashier" | "chef" | "waiter" | "delivery_staff" | "customer";
 export type Gender = "male" | "other" | "female"
@@ -96,6 +96,11 @@ export type Permission =
   | typeof TableAction.VIEW_TABLES
   | typeof TableAction.DELETE_TABLES
   | typeof TableAction.UPDATE_TABLES
+
+  |typeof SettingManagementAction.VIEW_SETTINGS
+  | typeof SettingManagementAction.UPDATE_SETTINGS
+  | typeof SettingManagementAction.UPDATE_RESTAURANT_INFORMATION
+  | typeof SettingManagementAction.VIEW_RESTAURANT_INFORMATION
 
 
   | typeof AttendanceManagementAction.VIEW_ATTENDANCE
