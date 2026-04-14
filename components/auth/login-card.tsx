@@ -13,9 +13,10 @@ import {
   CardHeader,
   CardTitle
 } from '../ui/card'
-import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Loader2, KeyRound } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 
 function LoginCard() {
   const [email, setEmail] = useState("")
@@ -102,6 +103,17 @@ function LoginCard() {
           </button>
         </div>
 
+        {/* Forgot Password Link */}
+        <div className="text-right">
+          <Link
+            href="/forgot-password"
+            className="inline-flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+          >
+            <KeyRound size={14} />
+            Forgot password?
+          </Link>
+        </div>
+
         {/* Button */}
         <Button
           type="submit"
@@ -120,12 +132,7 @@ function LoginCard() {
         </form>
       </CardContent>
 
-      <CardFooter>
-        <p className="w-full text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Forget Your Password? <br />
-          <span className="text-zinc-900 dark:text-white">Please contact admin</span>
-        </p>
-      </CardFooter>
+     
     </Card>
   )
 }

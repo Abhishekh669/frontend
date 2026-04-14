@@ -1,8 +1,11 @@
 import ForgotPasswordVerificationPage from '@/components/rms/reset-password/forgot-password-verification-page'
-import React from 'react'
+import { Suspense } from 'react'
 
 function page() {
-  return <ForgotPasswordVerificationPage />
+  return <Suspense fallback={<div>Loading verification details...</div>}>
+    <ForgotPasswordVerificationPage />
+  </Suspense>
+
 }
 
 export default page
