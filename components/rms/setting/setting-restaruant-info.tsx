@@ -102,7 +102,10 @@ function SettingRestaurantInfoPage({ info, isLoading, isError, user }: Props) {
         }
       }
       const res = await updateRestaurantInformation(payload);
-      if (!res.success) throw new Error(res.message);
+      if (!res.success) {
+        toast.error(res.error || 'Failed to update restaurant information');
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ['get-restaurant-information'] });
       setSelectedImageFile(null);
       setOriginalLogoUrl(payload.logo_url ?? '');

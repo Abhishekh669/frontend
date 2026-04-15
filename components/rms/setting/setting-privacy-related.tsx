@@ -31,7 +31,7 @@ function SettingPrivacyRelatedPage({ user }: { user: User }) {
 
   const handleSubmit = async () => {
     setIsChangingPassword(true);
-     
+
     try {
       if (form.newPassword.length < 8) {
         setError('New password must be at least 8 characters.');
@@ -42,13 +42,13 @@ function SettingPrivacyRelatedPage({ user }: { user: User }) {
         return;
       }
       const res = await updatePasswordAction(form.currentPassword, form.newPassword);
-      if(res.success){
-        toast.success(res.message || "Password updated successfully");
-        setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        router.replace("/login");
-      }else{
-        throw new Error(res.message || "Failed to update password");
+      if (!res.success) {
+        toast.error(res.error || "Failed to update password");
+        return;
       }
+      toast.success(res.message || "Password updated successfully");
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      router.replace("/login");
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -76,9 +76,9 @@ function SettingPrivacyRelatedPage({ user }: { user: User }) {
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
         <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#6b7280" strokeWidth="1.2" fill="none"/>
-            <path d="M5 7V5a3 3 0 016 0v2" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round"/>
-            <circle cx="8" cy="10.5" r="1" fill="#6b7280"/>
+            <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#6b7280" strokeWidth="1.2" fill="none" />
+            <path d="M5 7V5a3 3 0 016 0v2" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round" />
+            <circle cx="8" cy="10.5" r="1" fill="#6b7280" />
           </svg>
         </div>
         <div>
@@ -96,9 +96,8 @@ function SettingPrivacyRelatedPage({ user }: { user: User }) {
           <p className="text-sm font-medium text-gray-900">{user.name}</p>
           <p className="text-xs text-gray-400">{user.email}</p>
         </div>
-        <span className={`ml-auto text-xs px-2 py-0.5 rounded-md font-medium ${
-          user.is_active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
-        }`}>
+        <span className={`ml-auto text-xs px-2 py-0.5 rounded-md font-medium ${user.is_active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+          }`}>
           {user.is_active ? 'Active' : 'Inactive'}
         </span>
       </div>
@@ -188,9 +187,9 @@ function SettingPrivacyRelatedPage({ user }: { user: User }) {
         </Link>
 
         {/* Update Password Button */}
-        <button 
-          onClick={handleSubmit} 
-          disabled={isChangingPassword} 
+        <button
+          onClick={handleSubmit}
+          disabled={isChangingPassword}
           className="text-sm px-4 py-1.5 rounded-lg border border-gray-200 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
         >
           {isChangingPassword ? 'Updating...' : 'Update password'}

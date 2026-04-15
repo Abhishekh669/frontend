@@ -3,6 +3,7 @@ import { delete_cookie, get_cookies } from "@/utils/helper/get-cookies";
 import { getErrorMessage } from "@/utils/helper/get-error-message";
 import axios from "axios";
 import { cookies } from "next/headers";
+import { success } from "zod";
 
 export interface ActionResponse<T = any> {
     success: boolean;
@@ -40,7 +41,10 @@ export const loginAction = async (email: string, password: string): Promise<Acti
 
     } catch (error) {
         error = getErrorMessage(error);
-        throw new Error(error as string)
+        return {
+            success: false,
+            error: String(error)
+        }
     }
 }
 
@@ -79,7 +83,10 @@ export const updatePasswordAction = async (oldPassword : string, newPassword : s
         }
     } catch (error) {
             error = getErrorMessage(error);
-            throw new Error(error as string)
+            return {
+                success: false,
+                error: String(error)
+            }
     }
 }
 
@@ -102,7 +109,10 @@ export const createForgetPassword = async (email : string) =>{
         }
     } catch (error) {
             error = getErrorMessage(error);
-            throw new Error(error as string)
+            return {
+                success: false,
+                error: String(error)
+            }
     }
 }
 

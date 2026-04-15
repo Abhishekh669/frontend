@@ -27,25 +27,29 @@ function LoginCard() {
   const queryClient = useQueryClient()
 
   const loginHandler = async () => {
-    setLoading(true)
-    try {
-      const res = await loginAction(email, password)
-      if (res.success && res.message) {
-        toast.success(res.message)
-        queryClient.removeQueries({ queryKey: ["get-user-from-token"] })
-        router.replace("/dashboard")
-        router.refresh()
-      } else if (res.error) {
-        throw new Error(res.error)
-      }
-    } catch (error) {
-      const msg = getErrorMessage(error)
-      toast.error(String(msg))
-      console.log("Login error:", msg)
-    } finally {
-      setLoading(false)
+  setLoading(true)
+
+  try {
+    const res = await loginAction(email, password)
+
+    if (!res.success) {
+      toast.error(res.error)
+      return
     }
+
+    toast.success(res.message)
+
+    queryClient.removeQueries({ queryKey: ["get-user-from-token"] })
+    router.replace("/dashboard")
+    router.refresh()
+
+  } catch (error) {
+    const msg = getErrorMessage(error)
+    toast.error(String(msg))
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

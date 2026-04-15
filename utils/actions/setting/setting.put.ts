@@ -33,6 +33,9 @@ export const updateRestaurantInformation = async (info: UpdateRestaurantSettings
     } catch (error) {
         const errMsg = getErrorMessage(error)
         console.error("error in creating cusotmer order : ", errMsg)
-        throw new Error(errMsg)
+        return {
+            success: false,
+            error: String(errMsg)
+        }
     }
 }
