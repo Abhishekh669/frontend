@@ -17,4 +17,4 @@ async function GenerateBillPage() {
   return <GenerateBillsManagementPage  user={user}/>
 }
 
-export default GenerateBillPage
+export default GenerateBillPage;

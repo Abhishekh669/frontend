@@ -164,9 +164,7 @@ export default function ClientsManagement({ user }: { user: User }) {
         if (res.success && res.message) {
           queryClient.invalidateQueries({ queryKey: ["get-all-users"] });
           toast.success(res.message);
-        } else if (res.error) {
-          toast.error(res.error);
-        }
+        } 
       },
       onError: (err) => {
         toast.error(err?.message || "something went wrong");

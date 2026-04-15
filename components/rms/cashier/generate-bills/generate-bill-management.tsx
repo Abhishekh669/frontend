@@ -13,12 +13,14 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   Receipt, Printer, CreditCard, Coins, Flame, User, Hash,
-  Phone, ChefHat, AlertCircle, Loader2, ArrowLeft, BadgePercent,
+  Phone, ChefHat, AlertCircle,  ArrowLeft, BadgePercent,
   UtensilsCrossed, X, CheckCircle2, Timer, XCircle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { User as utype } from '@/utils/types/user.types';
 import { hasPermission } from '@/utils/helper/check-permission';
+import { useGetRestaurantInformation } from '@/utils/hooks/tanstack-query/query-hook/setting/use-get-restaurant-information';
+import { RestaurantSettings } from '@/utils/types/setting.types';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -54,14 +56,19 @@ const ITEM_STATUS_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ── page ─────────────────────────────────────────────────────────────────────
-function GenerateBillsManagementPage({user} : {user : utype}) {
-  if(!user)return null;
+function GenerateBillsManagementPage({ user }: { user: utype }) {
+  if (!user) return null;
   const params   = useSearchParams();
   const order_id = params.get('id');
-  const router = useRouter();
+  const router   = useRouter();
   const printRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
   const { data, isLoading, isError } = useGetOrderDetailsForCashierById(order_id ?? '');
+  const {
+    data: restaurantData,
+    isLoading: isRestaurantDataLoading,
+  } = useGetRestaurantInformation();
 
   const [paying, setPaying]                     = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -71,7 +78,8 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
   const [discountError, setDiscountError]       = useState<string>('');
   const [applyVAT, setApplyVAT]                 = useState<boolean>(false);
 
-  const order = data?.order as PaymentDetailsForCashierWithDiscount | undefined;
+  const order        = data?.order as PaymentDetailsForCashierWithDiscount | undefined;
+  const restaurantInfo = restaurantData?.info as RestaurantSettings | undefined;
 
   // ── Bug fix: use only non-cancelled items for subtotal ──────────────────
   const subtotal = calcSubtotal(order?.order_menu_items);
@@ -111,7 +119,7 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
 
   const handlePrint = () => {
     if (printRef.current) {
-      const printContent = printRef.current.innerHTML;
+      const printContent    = printRef.current.innerHTML;
       const originalContent = document.body.innerHTML;
       document.body.innerHTML = printContent;
       window.print();
@@ -121,8 +129,8 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
   };
 
   const handlePayment = async () => {
-    if(!hasPermission(user.role, "create:cashier")){
-      toast.error("unauthohrized user")
+    if (!hasPermission(user.role, "create:cashier")) {
+      toast.error("Unauthorized user");
       return;
     }
     const validationError = validateDiscount(manualDiscount);
@@ -174,6 +182,14 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
   const streak      = order.token_details?.current_streak ?? 0;
   const monthlyDays = order.token_details?.monthly_days   ?? 0;
   const lastVisit   = order.token_details?.last_visit;
+
+  // Build restaurant address line
+  const restaurantAddressLine = [
+    restaurantInfo?.address,
+    restaurantInfo?.city,
+    restaurantInfo?.state,
+    restaurantInfo?.country,
+  ].filter(Boolean).join(', ');
 
   return (
     <>
@@ -261,10 +277,10 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
               {/* Meta cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Table',    value: `#${order.table_number}`,               icon: <Hash className="w-4 h-4" /> },
+                  { label: 'Table',    value: `#${order.table_number}`,                icon: <Hash className="w-4 h-4" /> },
                   { label: 'Order ID', value: order.order_id.slice(0, 8).toUpperCase(), icon: <Receipt className="w-4 h-4" /> },
-                  { label: 'Customer', value: order.customer_name ?? '—',              icon: <User className="w-4 h-4" /> },
-                  { label: 'Phone',    value: order.customer_phone ?? '—',             icon: <Phone className="w-4 h-4" /> },
+                  { label: 'Customer', value: order.customer_name ?? '—',               icon: <User className="w-4 h-4" /> },
+                  { label: 'Phone',    value: order.customer_phone ?? '—',              icon: <Phone className="w-4 h-4" /> },
                 ].map(({ label, value, icon }) => (
                   <div key={label} className="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                     <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground mb-2">
@@ -443,18 +459,49 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
                 </div>
               </div>
 
-              {/* RestroX brand strip */}
+              {/* ── Restaurant brand strip ── */}
               <div className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-accent-foreground font-bold text-base flex-shrink-0"
-                    style={{ background: 'var(--accent)' }}>
-                    R
-                  </div>
+                <div className="relative flex-shrink-0">
+                  {isRestaurantDataLoading ? (
+                    <div className="w-11 h-11 rounded-xl bg-muted animate-pulse" />
+                  ) : restaurantInfo?.logo_url ? (
+                    <img
+                      src={restaurantInfo.logo_url}
+                      alt={restaurantInfo.name}
+                      className="w-11 h-11 rounded-xl object-cover border border-border"
+                    />
+                  ) : (
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-accent-foreground font-bold text-base"
+                      style={{ background: 'var(--accent)' }}
+                    >
+                      {restaurantInfo?.name?.[0]?.toUpperCase() ?? 'R'}
+                    </div>
+                  )}
                   <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-card" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">RestroX</p>
-                  <p className="text-[10px] text-muted-foreground">Bagar, Pokhara · +977-61-xxxxxx · VAT: 12345678</p>
+
+                <div className="min-w-0 flex-1">
+                  {isRestaurantDataLoading ? (
+                    <div className="space-y-1.5">
+                      <div className="h-3.5 w-32 bg-muted rounded animate-pulse" />
+                      <div className="h-2.5 w-48 bg-muted rounded animate-pulse" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-bold text-foreground truncate">
+                        {restaurantInfo?.name ?? 'Restaurant'}
+                      </p>
+                      {restaurantInfo?.slogan && (
+                        <p className="text-[10px] text-muted-foreground italic truncate">{restaurantInfo.slogan}</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {restaurantAddressLine}
+                        {restaurantInfo?.phone && ` · ${restaurantInfo.phone}`}
+                        {restaurantInfo?.email && ` · ${restaurantInfo.email}`}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -507,6 +554,7 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
                 streak={streak}
                 monthlyDays={monthlyDays}
                 totalTokens={totalTokens}
+                restaurantInfo={restaurantInfo}
               />
             </div>
           </div>
@@ -592,8 +640,10 @@ function GenerateBillsManagementPage({user} : {user : utype}) {
               </div>
 
               {/* Amount display */}
-              <div className="rounded-2xl border border-border bg-muted/30 px-4 py-4"
-                style={{ borderColor: 'color-mix(in oklch, var(--accent) 30%, var(--border))' }}>
+              <div
+                className="rounded-2xl border border-border bg-muted/30 px-4 py-4"
+                style={{ borderColor: 'color-mix(in oklch, var(--accent) 30%, var(--border))' }}
+              >
                 <p className="text-xs text-muted-foreground mb-1.5">Amount Before Additional Discount</p>
                 <p className="text-2xl font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(totalAfterTokenDiscount)}</p>
                 <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
@@ -748,12 +798,13 @@ interface ReceiptProps {
   streak: number;
   monthlyDays: number;
   totalTokens: number;
+  restaurantInfo?: RestaurantSettings;
 }
 
 // ── Receipt inner ─────────────────────────────────────────────────────────────
 function ReceiptInner({
   order, subtotal, tax, tokenDisc, manualDisc, total,
-  applyVAT, streak, monthlyDays, totalTokens,
+  applyVAT, streak, monthlyDays, totalTokens, restaurantInfo,
 }: ReceiptProps) {
   const fmtR = (n: number) =>
     `Rs ${new Intl.NumberFormat('en-NP', { maximumFractionDigits: 0 }).format(n)}`;
@@ -762,18 +813,50 @@ function ReceiptInner({
   const totalDiscount = tokenDisc + manualDisc;
 
   // Only show non-cancelled items in receipt
-  const activeItems = (order.order_menu_items ?? []).filter((i: OrderItemType) => i.status !== 'cancelled');
+  const activeItems    = (order.order_menu_items ?? []).filter((i: OrderItemType) => i.status !== 'cancelled');
   const cancelledItems = (order.order_menu_items ?? []).filter((i: OrderItemType) => i.status === 'cancelled');
+
+  const restaurantAddressLine = [
+    restaurantInfo?.address,
+    restaurantInfo?.city,
+    restaurantInfo?.state,
+    restaurantInfo?.country,
+  ].filter(Boolean).join(', ');
 
   return (
     <div style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#1c1c1c', lineHeight: 1.5 }}>
 
-      {/* Header — RestroX branding */}
+      {/* ── Header: dynamic restaurant branding ── */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '2px' }}>RESTROX</div>
-        <div style={{ fontSize: '10px', color: '#555' }}>Bagar, Pokhara</div>
-        <div style={{ fontSize: '10px', color: '#555' }}>+977-61-xxxxxx</div>
-        <div style={{ fontSize: '10px', color: '#555' }}>VAT: 12345678</div>
+        {restaurantInfo?.logo_url && (
+          <img
+            src={restaurantInfo.logo_url}
+            alt={restaurantInfo.name}
+            style={{
+              width: '52px', height: '52px', objectFit: 'cover',
+              borderRadius: '6px', margin: '0 auto 6px', display: 'block',
+            }}
+          />
+        )}
+        <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '2px' }}>
+          {restaurantInfo?.name?.toUpperCase() ?? 'RESTAURANT'}
+        </div>
+        {restaurantInfo?.slogan && (
+          <div style={{ fontSize: '10px', color: '#777', fontStyle: 'italic', marginTop: '2px' }}>
+            {restaurantInfo.slogan}
+          </div>
+        )}
+        {restaurantAddressLine && (
+          <div style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>
+            {restaurantAddressLine}
+          </div>
+        )}
+        {restaurantInfo?.phone && (
+          <div style={{ fontSize: '10px', color: '#555' }}>{restaurantInfo.phone}</div>
+        )}
+        {restaurantInfo?.email && (
+          <div style={{ fontSize: '10px', color: '#555' }}>{restaurantInfo.email}</div>
+        )}
       </div>
 
       <DashedLine />
@@ -879,11 +962,15 @@ function ReceiptInner({
         <Row left="Visit Streak:"   right={`${streak} days`} />
         <Row left="Monthly Visits:" right={`${monthlyDays} days`} />
       </div>
+
       <DashedLine />
 
       {/* Footer */}
       <div style={{ textAlign: 'center', fontSize: '10px', color: '#555', marginTop: '10px' }}>
         <div>Thank you for dining with us!</div>
+        {restaurantInfo?.name && (
+          <div style={{ marginTop: '2px', fontWeight: 600 }}>{restaurantInfo.name}</div>
+        )}
         <div style={{ marginTop: '2px' }}>Please visit again</div>
         <div style={{ marginTop: '6px', fontSize: '9px', color: '#888' }}>*** CUSTOMER COPY ***</div>
       </div>
@@ -936,6 +1023,7 @@ function BillSkeleton() {
         <div className="grid grid-cols-3 gap-3">
           {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-muted rounded-2xl" />)}
         </div>
+        <div className="h-16 bg-muted rounded-2xl" />
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="h-12 bg-muted rounded-xl" />
           <div className="h-12 bg-muted rounded-xl" />
