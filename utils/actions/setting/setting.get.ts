@@ -36,3 +36,5 @@ export const getRestaurantInformation = async() =>{
         throw new Error(getErrorMessage(error))
     }
 }
+
+
