@@ -123,6 +123,7 @@ export const routePermissions: Record<Role, Route[]> = {
   manager: [
     AvailableRoutes.DASHBOARD,
     AvailableRoutes.REPORTS,
+    AvailableRoutes.CASHIER_ROUTE,
     AvailableRoutes.CLIENT_MANAGEMENT,
     AvailableRoutes.ORDER_MANAGEMENT,
     AvailableRoutes.TABLE_MANAGEMENT,
