@@ -208,7 +208,7 @@ function AttendanceCurrentUserListsPage({ user }: { user: User }) {
     setProcessingEmployeeId(employeeId);
     check_in(employeeId, {
       onSuccess: (res) => { if (res.success && res.message) { toast.success(res.message || "User checked in successfully"); queryClient.invalidateQueries({ queryKey: ["get-current-attendance"] }); } setProcessingEmployeeId(null); },
-      onError: (err) => { toast.error((getErrorMessage(err)) || "Failed to check in user"); setProcessingEmployeeId(null); }
+      onError: (err) => { toast.error(err?.message || "Failed to check in user"); setProcessingEmployeeId(null); }
     });
   };
 
@@ -217,7 +217,7 @@ function AttendanceCurrentUserListsPage({ user }: { user: User }) {
     setProcessingEmployeeId(employeeId);
     check_out(employeeId, {
       onSuccess: (res) => { if (res.success && res.message) { toast.success(res.message || "User checked out successfully"); queryClient.invalidateQueries({ queryKey: ["get-current-attendance"] }); } setProcessingEmployeeId(null); },
-      onError: (err) => { toast.error((getErrorMessage(err)) || "Failed to check out user"); setProcessingEmployeeId(null); }
+      onError: (err) => { toast.error((err?.message) || "Failed to check out user"); setProcessingEmployeeId(null); }
     });
   };
 
