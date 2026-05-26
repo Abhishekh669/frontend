@@ -3,10 +3,56 @@
 import { get_cookies } from "@/utils/helper/get-cookies";
 import { getErrorMessage } from "@/utils/helper/get-error-message";
 import { TableValidationType } from "@/utils/types/table.types";
+import { CreateCustomerFeedback, CustomerFeedback } from "@/utils/types/user.types";
 import axios from "axios";
 import { cookies } from "next/headers";
 
 type ReqStatus = "not_found" | "not_approved" | "approved"
+
+
+export const createFeedBack = async (d : CreateCustomerFeedback) =>{
+    try {
+        const res = await axios.post(
+            `${process.env.NEXT_BACKEND_URL}/api/v1/user-service/create-feedback`,d);
+        const data = res.data;
+        if (!data?.success) {
+            throw new Error("user not authorized")
+        }
+
+        return {
+            success: data?.success as boolean,
+            message : data?.message || "submitted successfully",
+        }
+    } catch (error) {
+        return {
+            success  : false,
+            error : getErrorMessage(error)
+        }
+        
+    }
+}
+
+
+export const getAllFeedbacks = async () => {
+    try {
+        const res = await axios.get(
+            `${process.env.NEXT_BACKEND_URL}/api/v1/user-service/get-feedbacks`);
+        const data = res.data;
+        if (!data?.success) {
+            throw new Error("user not authorized")
+        }
+
+        const feedbacks = data?.feedbacks as CustomerFeedback[];
+        return {
+            success: data?.success as boolean,
+            feedbacks,
+        }
+
+    } catch (error) {
+        const errMsg = getErrorMessage(error)
+        throw new Error(errMsg)
+    }
+}
 
 export const getTableValidationFromToken = async () => {
     try {
@@ -25,25 +71,25 @@ export const getTableValidationFromToken = async () => {
         );
         const data = res.data;
         console.log("thisis hte data of table validation :  ", data)
-        if(!data?.success){
+        if (!data?.success) {
             throw new Error("user not authorized")
         }
 
-        const table_validation  : TableValidationType = data?.table_validation;
-        if(!table_validation.waiter_id){
+        const table_validation: TableValidationType = data?.table_validation;
+        if (!table_validation.waiter_id) {
             throw new Error("order request  not approved")
         }
         return {
-            success : data?.success as boolean,
-            table_validation ,
+            success: data?.success as boolean,
+            table_validation,
         }
 
     } catch (error) {
         const errMsg = getErrorMessage(error)
-       return {
-        success : false,
-        error : errMsg 
-       }
+        return {
+            success: false,
+            error: errMsg
+        }
     }
 }
 export const getApprovalRequestsFromPhoneNTableNum = async (tableNumber: number, phone: string) => {

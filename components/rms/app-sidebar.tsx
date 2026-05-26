@@ -30,6 +30,7 @@ import { ModeToggle } from "../shared/mode-toggle";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+
 export const sidebarRoutes = [
   { title: "Dashboard",  path: AvailableRoutes.DASHBOARD,         icon: LayoutDashboard },
   { title: "Attendance", path: AvailableRoutes.ATTENDANCE,         icon: Users           },

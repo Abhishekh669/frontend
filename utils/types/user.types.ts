@@ -76,9 +76,31 @@ export interface UsersForAttendance {
   image ?: string;
 }
 
+export interface CustomerFeedback {
+	id: string;
 
+	phone?: string;
 
+	name: string;
 
+	text: string;
+
+	rating: number;
+
+	created_at: string;
+}
+
+export interface CreateCustomerFeedback {
+
+	phone?: string;
+
+	name: string;
+
+	text: string;
+
+	rating: number;
+
+}
 
 
 export type Permission =
