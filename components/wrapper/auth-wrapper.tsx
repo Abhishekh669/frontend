@@ -23,7 +23,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     }
 
     if (user && isLoginPage) {
-      router.replace("/dashboard")
+      router.replace("/report-and-analysis")
     }
   }, [user, isLoading, isLoginPage, router])
 
