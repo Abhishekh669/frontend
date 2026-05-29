@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from "react";
 
 
 export const sidebarRoutes = [
-  { title: "Dashboard",  path: AvailableRoutes.DASHBOARD,         icon: LayoutDashboard },
+  { title: "Reports",    path: AvailableRoutes.REPORTS,            icon: FileBarChart    },
   { title: "Attendance", path: AvailableRoutes.ATTENDANCE,         icon: Users           },
   { title: "Cashier",    path: AvailableRoutes.CASHIER_ROUTE,      icon: Calculator      },
   { title: "Kitchen",    path: AvailableRoutes.CHEF_ROUTE,         icon: ChefHat         },
@@ -40,7 +40,6 @@ export const sidebarRoutes = [
   { title: "Tables",     path: AvailableRoutes.TABLE_MANAGEMENT,   icon: Grid3X3         },
   { title: "Ingredients",  path: AvailableRoutes.RAW_MATERIALS,      icon: Package         },
   { title: "Staff",      path: AvailableRoutes.CLIENT_MANAGEMENT,  icon: Users           },
-  { title: "Reports",    path: AvailableRoutes.REPORTS,            icon: FileBarChart    },
   { title: "Settings",   path: AvailableRoutes.SETTINGS,           icon: Settings        },
 ];
 

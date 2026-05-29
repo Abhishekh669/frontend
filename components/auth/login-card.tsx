@@ -9,7 +9,6 @@ import { toast } from 'sonner'
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '../ui/card'
@@ -40,7 +39,7 @@ function LoginCard() {
     toast.success(res.message)
 
     queryClient.removeQueries({ queryKey: ["get-user-from-token"] })
-    router.replace("/dashboard")
+    router.replace("/report-and-analysis")
     router.refresh()
 
   } catch (error) {
