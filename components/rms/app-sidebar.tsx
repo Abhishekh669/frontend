@@ -9,7 +9,7 @@ import {
   ClipboardList,
   FileBarChart,
   Grid3X3,
-  LayoutDashboard,
+  LogOut,
   Package,
   Settings,
   Users,
@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AvailableRoutes } from "@/utils/rbac/role-n-permissiona";
 import Link from "next/link";
 import { UserPropsTypes } from "../wrapper/rms-wrapper";
@@ -29,18 +29,28 @@ import { hasRoutePermission } from "@/utils/helper/check-permission";
 import { ModeToggle } from "../shared/mode-toggle";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { delete_cookie } from "@/utils/helper/get-cookies";
+
+
+export const logOutUser = async (token_name : string) =>{
+    const res = await delete_cookie(token_name)
+    if (!res){
+        return false;
+    }
+    return true
+}
 
 
 export const sidebarRoutes = [
-  { title: "Reports",    path: AvailableRoutes.REPORTS,            icon: FileBarChart    },
-  { title: "Attendance", path: AvailableRoutes.ATTENDANCE,         icon: Users           },
-  { title: "Cashier",    path: AvailableRoutes.CASHIER_ROUTE,      icon: Calculator      },
-  { title: "Kitchen",    path: AvailableRoutes.CHEF_ROUTE,         icon: ChefHat         },
-  { title: "Orders",     path: AvailableRoutes.ORDER_MANAGEMENT,   icon: ClipboardList   },
-  { title: "Tables",     path: AvailableRoutes.TABLE_MANAGEMENT,   icon: Grid3X3         },
-  { title: "Ingredients",  path: AvailableRoutes.RAW_MATERIALS,      icon: Package         },
-  { title: "Staff",      path: AvailableRoutes.CLIENT_MANAGEMENT,  icon: Users           },
-  { title: "Settings",   path: AvailableRoutes.SETTINGS,           icon: Settings        },
+  { title: "Reports",     path: AvailableRoutes.REPORTS,           icon: FileBarChart  },
+  { title: "Attendance",  path: AvailableRoutes.ATTENDANCE,        icon: Users         },
+  { title: "Cashier",     path: AvailableRoutes.CASHIER_ROUTE,     icon: Calculator    },
+  { title: "Kitchen",     path: AvailableRoutes.CHEF_ROUTE,        icon: ChefHat       },
+  { title: "Orders",      path: AvailableRoutes.ORDER_MANAGEMENT,  icon: ClipboardList },
+  { title: "Tables",      path: AvailableRoutes.TABLE_MANAGEMENT,  icon: Grid3X3       },
+  { title: "Ingredients", path: AvailableRoutes.RAW_MATERIALS,     icon: Package       },
+  { title: "Staff",       path: AvailableRoutes.CLIENT_MANAGEMENT, icon: Users         },
+  { title: "Settings",    path: AvailableRoutes.SETTINGS,          icon: Settings      },
 ];
 
 interface AppSidebarProps {
@@ -51,10 +61,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const submenuRef = useRef<HTMLDivElement>(null);
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState<string>("");
+  const [isMenuOpen, setIsMenuOpen]   = useState(false);
+  const [activeItem, setActiveItem]   = useState<string>("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   if (!user) return null;
 
@@ -73,6 +85,19 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
     }
   }, [pathname]);
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    const success = await logOutUser("user_token");
+    if (success) {
+      router.push("/");
+      router.refresh();
+    } else {
+      // cookie deletion failed — still redirect to be safe
+      router.push("/");
+    }
+    setIsLoggingOut(false);
+  };
+
   return (
     <aside
       className={cn(
@@ -90,7 +115,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
         collapsed ? "px-4 py-5" : "px-5 py-5"
       )}>
         <div className="flex items-center gap-3 min-h-[40px]">
-          {/* Logo mark with gold ring */}
           <div className="relative shrink-0 w-9 h-9 rounded-xl bg-sidebar-accent border border-sidebar-border flex items-center justify-center ring-1 ring-accent/20 shadow-sm">
             <Image src="/logo.png" alt="DineX Logo" fill className="object-contain rounded-xl" />
           </div>
@@ -107,7 +131,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
           )}
         </div>
 
-        {/* Mode toggle */}
         <div className={cn("mt-4 transition-all duration-300", collapsed ? "flex justify-center" : "")}>
           <ModeToggle isCollapsed={collapsed} />
         </div>
@@ -116,7 +139,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
       {/* ── Navigation ───────────────────────────────────────────────────── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-0.5 scrollbar-hide">
 
-        {/* Section label */}
         {!collapsed && (
           <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 select-none">
             Navigation
@@ -139,13 +161,11 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                     : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                 )}
               >
-                {/* Active left bar */}
                 <span className={cn(
                   "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r-full bg-accent transition-all duration-200",
                   isActive ? "h-5 opacity-100" : "h-0 opacity-0"
                 )} />
 
-                {/* Icon container */}
                 <span className={cn(
                   "flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 shrink-0",
                   isActive
@@ -164,7 +184,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                   </span>
                 )}
 
-                {/* Active dot when collapsed */}
                 {collapsed && isActive && (
                   <span className="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
                 )}
@@ -173,7 +192,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
               {/* ── Menu submenu (after Tables) ──────────────────────────── */}
               {route.title === "Tables" && (
                 <div className="mt-0.5">
-                  {/* Menu parent button */}
                   <button
                     onClick={() => { setActiveItem("Menu"); setIsMenuOpen((p) => !p); }}
                     className={cn(
@@ -183,13 +201,11 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                         : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                     )}
                   >
-                    {/* Active bar */}
                     <span className={cn(
                       "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 rounded-r-full bg-accent transition-all duration-200",
                       (activeItem === "Menu" || activeItem === "Category" || activeItem === "Dishes") ? "h-5 opacity-100" : "h-0 opacity-0"
                     )} />
 
-                    {/* Icon */}
                     <span className={cn(
                       "flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 shrink-0",
                       activeItem === "Menu" || activeItem === "Category" || activeItem === "Dishes"
@@ -210,7 +226,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                     )}
                   </button>
 
-                  {/* Submenu — animated grid rows */}
                   {!collapsed && (
                     <div className={cn(
                       "grid transition-all duration-200 ease-in-out",
@@ -219,7 +234,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                       <div ref={submenuRef} className="overflow-hidden">
                         <div className="ml-[46px] space-y-0.5 py-1 border-l border-sidebar-border pl-3">
 
-                          {/* Dishes */}
                           <Link
                             href={`${AvailableRoutes.FOOD_CATEGORY}/all-menu-items`}
                             onClick={() => setActiveItem("Dishes")}
@@ -238,7 +252,6 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
                             Dishes
                           </Link>
 
-                          {/* Category */}
                           <Link
                             href={AvailableRoutes.FOOD_CATEGORY}
                             onClick={() => setActiveItem("Category")}
@@ -268,11 +281,12 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
         })}
       </nav>
 
-      {/* ── User profile ─────────────────────────────────────────────────── */}
+      {/* ── User profile + Logout ─────────────────────────────────────────── */}
       <div className={cn(
         "border-t border-sidebar-border transition-all duration-300",
-        collapsed ? "px-3 py-4" : "px-4 py-4"
+        collapsed ? "px-3 py-3" : "px-4 py-3"
       )}>
+        {/* User info row */}
         <div className={cn(
           "flex items-center gap-3 rounded-xl transition-all duration-200",
           collapsed ? "justify-center" : "px-2 py-2 hover:bg-sidebar-accent/40 cursor-default"
@@ -295,9 +309,38 @@ export function AppSidebar({ collapsed, onToggle, user }: AppSidebarProps) {
             </div>
           )}
         </div>
+
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className={cn(
+            "mt-2 w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all duration-200 group select-none",
+            "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            collapsed && "justify-center"
+          )}
+          title={collapsed ? "Sign out" : undefined}
+        >
+          <span className={cn(
+            "flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 shrink-0",
+            "group-hover:bg-destructive/10"
+          )}>
+            <LogOut className={cn(
+              "w-[15px] h-[15px] transition-transform duration-200",
+              isLoggingOut ? "animate-pulse" : "group-hover:-translate-x-0.5"
+            )} />
+          </span>
+
+          {!collapsed && (
+            <span className="text-sm font-medium">
+              {isLoggingOut ? "Signing out…" : "Sign out"}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* ── Collapse toggle button ────────────────────────────────────────── */}
+      {/* ── Collapse toggle ────────────────────────────────────────────────── */}
       <Button
         variant="ghost"
         size="icon"

@@ -20,7 +20,6 @@ export default function Hero() {
 
       {/* === BACKGROUND LAYERS === */}
 
-      {/* Soft lavender-to-ivory gradient, like RestroX */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -29,7 +28,6 @@ export default function Hero() {
         }}
       />
 
-      {/* Top-right warm radial glow */}
       <div
         className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full pointer-events-none"
         style={{
@@ -37,7 +35,6 @@ export default function Hero() {
           opacity: 0.11,
         }}
       />
-      {/* Bottom-left subtle glow */}
       <div
         className="absolute bottom-0 -left-16 w-80 h-80 rounded-full pointer-events-none"
         style={{
@@ -46,7 +43,6 @@ export default function Hero() {
         }}
       />
 
-      {/* Dot grid texture */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -63,7 +59,6 @@ export default function Hero() {
           {/* LEFT: Copy */}
           <div>
 
-            {/* Trust badge pill */}
             <div className="inline-flex items-center gap-2 mb-7 px-3.5 py-1.5 rounded-full border border-border bg-card/80 shadow-sm">
               <span className="text-base">🇳🇵</span>
               <span className="text-xs font-semibold text-foreground tracking-wide">
@@ -71,7 +66,6 @@ export default function Hero() {
               </span>
             </div>
 
-            {/* Main headline — mirrors RestroX layout */}
             <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-black tracking-tight leading-[1.06] text-foreground mb-5">
               Best{" "}
               <span className="text-accent">Restaurant</span>{" "}
@@ -81,7 +75,6 @@ export default function Hero() {
               in Nepal
             </h1>
 
-            {/* Sub-copy */}
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-[500px] mb-8">
               With <span className="font-bold text-foreground">DineX</span>, manage all your restaurant
               operations — orders, menu, staff, inventory, and finance —
@@ -90,13 +83,13 @@ export default function Hero() {
 
             {/* CTA buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <a
-                href="#"
+              <Link
+                href="/menu-items"
                 className="inline-flex items-center justify-center gap-2 h-12 px-7 text-sm font-bold bg-accent text-accent-foreground hover:bg-accent/85 active:scale-[0.98] rounded-xl transition-all shadow-md"
               >
-                Start a 14-day Free Trial
+                Order Now
                 <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-              </a>
+              </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center h-12 px-6 text-sm font-medium border border-border bg-transparent hover:bg-muted rounded-xl transition-colors"
@@ -105,7 +98,6 @@ export default function Hero() {
               </Link>
             </div>
 
-            {/* Proof items */}
             <div className="flex flex-wrap gap-x-5 gap-y-2 mb-10">
               {proofBadges.map((b) => (
                 <span key={b} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -115,7 +107,6 @@ export default function Hero() {
               ))}
             </div>
 
-            {/* City presence strip */}
             <div className="flex items-center gap-1 flex-wrap">
               <span className="text-[11px] text-muted-foreground font-medium mr-1">
                 Restaurants in:
@@ -138,7 +129,6 @@ export default function Hero() {
 
           {/* RIGHT: Dashboard mockup */}
           <div className="relative flex justify-center lg:justify-end">
-            {/* Glow ring behind card */}
             <div
               className="absolute inset-[-20px] rounded-3xl pointer-events-none"
               style={{
@@ -151,11 +141,9 @@ export default function Hero() {
               className="relative w-full max-w-[430px] rounded-3xl border border-border bg-card shadow-2xl overflow-hidden"
               style={{ animation: "dinexFloat 6s ease-in-out infinite" }}
             >
-              {/* Card top accent */}
               <div className="h-1 w-full bg-gradient-to-r from-accent/60 via-accent to-accent/60" />
 
               <div className="p-5">
-                {/* Header row */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-xl bg-accent/20 flex items-center justify-center">
@@ -172,7 +160,6 @@ export default function Hero() {
                   </div>
                 </div>
 
-                {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2.5 mb-4">
                   {[
                     { emoji: "💰", val: "Rs. 48,200", label: "Today's Sales", color: "text-amber-500 bg-amber-500/10" },
@@ -189,7 +176,6 @@ export default function Hero() {
                   ))}
                 </div>
 
-                {/* Active orders list */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -219,7 +205,6 @@ export default function Hero() {
                   </div>
                 </div>
 
-                {/* Revenue bar */}
                 <div className="rounded-xl bg-muted/30 px-3 py-2.5">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] text-muted-foreground font-medium">Daily Target</span>

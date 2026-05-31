@@ -10,6 +10,7 @@ const navLinks = [
   { en: "Pricing", href: "#pricing" },
   { en: "Career", href: "#career" },
   { en: "Contact", href: "#contact" },
+  {en : "Feedbacks", href : "/feedbacks"}
 ];
 
 export default function Navbar() {

@@ -7,7 +7,6 @@ import React, { useEffect } from 'react'
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { data, isLoading } = useGetUserFromToken(true)
 
-  console.log("thisis hte user in  loign auth wrapper : ", data)
   
   const router = useRouter()
   const pathname = usePathname()
